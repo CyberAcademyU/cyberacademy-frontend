@@ -1,0 +1,261 @@
+<div class="admin-layout">
+  
+  <!-- =========================================================================
+       BARRA LATERAL IZQUIERDA (AZUL OSCURO #0B1B3D)
+       ========================================================================= -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      
+      <!-- Logo CyberAcademy con Subtítulo Administrador -->
+      <div class="brand-container">
+        <div class="brand-logo">
+          <span class="brand-cyber">Cyber</span><span class="brand-academy">Academy</span>
+        </div>
+        <div class="brand-subtitle">
+          Administrador
+        </div>
+      </div>
+
+      <!-- Menú de Navegación del Administrador -->
+      <nav class="nav-menu">
+        <!-- Pestaña Resumen -->
+        <button
+          type="button"
+          (click)="activeTab.set('resumen')"
+          [class.active]="activeTab() === 'resumen'"
+          class="nav-item">
+          Resumen
+        </button>
+
+        <!-- Pestaña Módulos -->
+        <button
+          type="button"
+          (click)="activeTab.set('modulos')"
+          [class.active]="activeTab() === 'modulos'"
+          class="nav-item">
+          Módulos
+        </button>
+
+        <!-- Pestaña Usuarios -->
+        <button
+          type="button"
+          (click)="activeTab.set('usuarios')"
+          [class.active]="activeTab() === 'usuarios'"
+          class="nav-item">
+          Usuarios
+        </button>
+      </nav>
+    </div>
+
+    <!-- Enlace Inferior: Cerrar sesión -->
+    <div class="sidebar-bottom">
+      <button
+        type="button"
+        (click)="logout()"
+        class="logout-btn">
+        <span>Cerrar sesión</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- =========================================================================
+       ÁREA PRINCIPAL DE CONTENIDO
+       ========================================================================= -->
+  <main class="main-content">
+    
+    <!-- Notificación al Exportar CSV -->
+    @if (exportSuccess()) {
+      <div class="export-banner">
+        <div class="export-banner-text">
+          <svg class="icon-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Archivo <strong>resultados_estudiantes_cyberacademy.csv</strong> descargado exitosamente.</span>
+        </div>
+        <button (click)="exportSuccess.set(false)" class="export-banner-close">×</button>
+      </div>
+    }
+
+    <!-- PESTAÑA 1: RESUMEN GENERAL (DISEÑO EXACTO DEL MOCKUP) -->
+    @if (activeTab() === 'resumen') {
+      <div class="content-wrapper">
+        
+        <!-- Encabezado: Título + Botón Exportar Resultados -->
+        <div class="header-row">
+          <div>
+            <h1 class="page-title">Resumen general</h1>
+            <p class="page-subtitle">Vista de todos los estudiantes de CyberAcademy</p>
+          </div>
+
+          <div>
+            <button
+              type="button"
+              (click)="exportResults()"
+              class="btn-export">
+              <svg class="icon-download" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Exportar resultados</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Fila de 3 Tarjetas de Métricas -->
+        <div class="metrics-grid">
+          
+          <!-- Tarjeta 1: Estudiantes activos -->
+          <div class="metric-card">
+            <div class="metric-number text-navy">150</div>
+            <div class="metric-label">Estudiantes activos</div>
+          </div>
+
+          <!-- Tarjeta 2: Completaron los 6 módulos -->
+          <div class="metric-card">
+            <div class="metric-number text-emerald">62%</div>
+            <div class="metric-label">Completaron los 6 módulos</div>
+          </div>
+
+          <!-- Tarjeta 3: Mejora promedio -->
+          <div class="metric-card">
+            <div class="metric-number text-emerald">+40 pts</div>
+            <div class="metric-label">Mejora promedio (diagnóstica vs. final)</div>
+          </div>
+
+        </div>
+
+        <!-- Grilla Inferior de 2 Columnas -->
+        <div class="panels-grid">
+          
+          <!-- Tarjeta Izquierda: Estudiantes que completaron cada módulo -->
+          <div class="panel-card panel-left">
+            <h2 class="panel-title">Estudiantes que completaron cada módulo</h2>
+
+            <div class="modules-progress-list">
+              @for (mod of modules; track mod.id) {
+                <div class="module-row">
+                  <div class="module-name">{{ mod.name }}</div>
+
+                  <!-- Barra de Progreso Verde -->
+                  <div class="progress-track">
+                    <div
+                      class="progress-fill"
+                      [style.width.%]="mod.percentage"
+                    ></div>
+                  </div>
+
+                  <div class="module-percentage">{{ mod.percentage }}%</div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Tarjeta Derecha: Últimos ingresos -->
+          <div class="panel-card panel-right">
+            <h2 class="panel-title">Últimos ingresos</h2>
+
+            <div class="activities-list">
+              @for (act of recentActivities; track act.name) {
+                <div class="activity-item">
+                  <div class="activity-name">{{ act.name }}</div>
+                  <div class="activity-detail">{{ act.activity }}</div>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    }
+
+    <!-- PESTAÑA 2: DETALLE DE MÓDULOS -->
+    @if (activeTab() === 'modulos') {
+      <div class="content-wrapper">
+        <div class="tab-header">
+          <h1 class="page-title">Módulos de Capacitación Práctica</h1>
+          <p class="page-subtitle">Progreso y tasas de completitud de los laboratorios interactivos de ciberseguridad.</p>
+        </div>
+
+        <div class="modules-catalog-grid">
+          @for (m of modules; track m.id) {
+            <div class="module-detail-card">
+              <div>
+                <div class="module-tag-row">
+                  <span class="module-badge">Módulo 0{{ m.id }}</span>
+                  <span class="module-time">{{ m.avgTime }}</span>
+                </div>
+                <h3 class="module-detail-title">{{ m.name }}</h3>
+                <p class="module-detail-category">{{ m.category }}</p>
+              </div>
+
+              <div class="module-detail-footer">
+                <div class="footer-stat-row">
+                  <span class="footer-stat-label">Completado por</span>
+                  <span class="footer-stat-value">{{ m.percentage }}%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" [style.width.%]="m.percentage"></div>
+                </div>
+                <div class="module-graduates-text">
+                  {{ m.studentsCompleted }} estudiantes completaron este desafío
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- PESTAÑA 3: GESTIÓN DE USUARIOS -->
+    @if (activeTab() === 'usuarios') {
+      <div class="content-wrapper">
+        <div class="tab-header">
+          <h1 class="page-title">Lista de Estudiantes y Accesos</h1>
+          <p class="page-subtitle">Usuarios registrados en Supabase PostgreSQL y su estado de avance.</p>
+        </div>
+
+        <div class="table-container">
+          <table class="students-table">
+            <thead>
+              <tr>
+                <th>Estudiante</th>
+                <th>Correo</th>
+                <th>Rol BD</th>
+                <th>Estado</th>
+                <th class="text-center">Módulos</th>
+                <th class="text-right">Progreso</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of students; track u.id) {
+                <tr>
+                  <td class="font-bold text-dark">{{ u.name }}</td>
+                  <td class="font-mono text-muted">{{ u.email }}</td>
+                  <td>
+                    <span [class]="u.role === 'ADMIN' ? 'role-badge badge-admin' : 'role-badge badge-student'">
+                      {{ u.role }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-active">
+                      <span class="status-dot"></span>
+                      {{ u.status }}
+                    </span>
+                  </td>
+                  <td class="text-center font-mono">{{ u.modulesCompleted }} / 6</td>
+                  <td class="text-right font-mono">
+                    <span class="score-diag">{{ u.diagnosticScore }} pts</span>
+                    <span class="score-arrow">→</span>
+                    <span class="score-final">{{ u.finalScore }} pts</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+  </main>
+
+</div>

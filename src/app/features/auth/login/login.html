@@ -1,0 +1,238 @@
+<div class="auth-wrapper">
+  <main class="auth-main">
+    <div class="auth-card">
+      
+      <!-- Logo con Escudo Verde -->
+      <div class="card-brand">
+        <div class="green-shield">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <span class="brand-text">
+          <span class="brand-dark">Cyber</span><span class="brand-green">Academy</span>
+        </span>
+      </div>
+
+      <!-- Pestañas para cambiar entre Login y Registro -->
+      @if (currentMode() !== 'verify-otp') {
+        <div class="auth-tabs">
+          <button
+            type="button"
+            (click)="setMode('login')"
+            [class.active]="currentMode() === 'login'"
+            class="tab-btn">
+            Iniciar sesión
+          </button>
+          <button
+            type="button"
+            (click)="setMode('register')"
+            [class.active]="currentMode() === 'register'"
+            class="tab-btn">
+            Registrarse
+          </button>
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- VISTA 1: INICIO DE SESIÓN                  -->
+      <!-- ========================================== -->
+      @if (currentMode() === 'login') {
+        <div class="card-header">
+          <h1 class="card-title">Identifica el ataque antes de que pueda afectarte.</h1>
+          <p class="card-subtitle">Practica con situaciones reales de riesgo digital en un entorno seguro.</p>
+        </div>
+
+        @if (verifiedSuccess()) {
+          <div class="alert-success">
+            ¡Correo verificado con éxito! Ya puedes iniciar sesión.
+          </div>
+        }
+
+        @if (loginError()) {
+          <div class="alert-error">
+            {{ loginError() }}
+          </div>
+        }
+
+        <form [formGroup]="loginForm" (ngSubmit)="onLoginSubmit()" class="auth-form">
+          <div class="form-group">
+            <label for="login-email">Correo</label>
+            <input
+              id="login-email"
+              type="email"
+              formControlName="email"
+              placeholder="correo@ejemplo.com"
+              class="form-control"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <input
+              id="login-password"
+              type="password"
+              formControlName="password"
+              placeholder="••••••••"
+              class="form-control"
+            />
+          </div>
+
+          <button type="submit" [disabled]="loginForm.invalid || isLoading()" class="btn-submit">
+            {{ isLoading() ? 'Iniciando sesión...' : 'Iniciar sesión' }}
+          </button>
+        </form>
+
+        <div class="card-footer">
+          <button type="button" (click)="setMode('register')" class="link-switch">
+            ¿No tienes cuenta? Regístrate
+          </button>
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- VISTA 2: REGISTRO DE ESTUDIANTE           -->
+      <!-- ========================================== -->
+      @if (currentMode() === 'register') {
+        <div class="card-header">
+          <h1 class="card-title">Crea tu cuenta de estudiante</h1>
+          <p class="card-subtitle">Ingresa tus datos para validar tu correo y activar tu entrenamiento.</p>
+        </div>
+
+        @if (registerError()) {
+          <div class="alert-error">
+            {{ registerError() }}
+          </div>
+        }
+
+        <form [formGroup]="registerForm" (ngSubmit)="onRegisterSubmit()" class="auth-form">
+          <div class="form-row">
+            <div class="form-group col">
+              <label for="firstName">Nombres</label>
+              <input
+                id="firstName"
+                type="text"
+                formControlName="firstName"
+                placeholder="Carlos"
+                class="form-control"
+              />
+            </div>
+            <div class="form-group col">
+              <label for="lastName">Apellidos</label>
+              <input
+                id="lastName"
+                type="text"
+                formControlName="lastName"
+                placeholder="Mendoza"
+                class="form-control"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reg-email">Correo Electrónico</label>
+            <input
+              id="reg-email"
+              type="email"
+              formControlName="email"
+              placeholder="correo@ejemplo.com"
+              class="form-control"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="reg-password">Contraseña</label>
+            <input
+              id="reg-password"
+              type="password"
+              formControlName="password"
+              placeholder="Mínimo 8 caracteres"
+              class="form-control"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">Repite Contraseña</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              formControlName="confirmPassword"
+              placeholder="Vuelve a escribir la contraseña"
+              class="form-control"
+            />
+          </div>
+
+          <button type="submit" [disabled]="isLoading()" class="btn-submit">
+            {{ isLoading() ? 'Generando código de verificación...' : 'Registrarme como estudiante' }}
+          </button>
+        </form>
+
+        <div class="card-footer">
+          <button type="button" (click)="setMode('login')" class="link-switch">
+            ¿Ya tienes una cuenta? Iniciar sesión
+          </button>
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- VISTA 3: VALIDACIÓN DEL CÓDIGO POR CORREO -->
+      <!-- ========================================== -->
+      @if (currentMode() === 'verify-otp') {
+        <div class="text-center">
+          <h1 class="card-title">Verifica tu correo</h1>
+          <p class="card-subtitle">
+            Ingresa el código de 6 dígitos que enviamos a:<br>
+            <strong class="email-highlight">{{ pendingEmail() }}</strong>
+          </p>
+
+          @if (otpError()) {
+            <div class="alert-error">
+              {{ otpError() }}
+            </div>
+          }
+
+          <div class="otp-inputs">
+            @for (digit of otpDigits; track $index) {
+              <input
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                [value]="otpDigits[$index]"
+                (input)="onDigitInput($event, $index)"
+                (keydown)="onKeyDown($event, $index)"
+                class="otp-box"
+              />
+            }
+          </div>
+
+          <p class="security-note">
+            Expira en 15 minutos · Máximo 5 intentos
+          </p>
+
+          <button
+            type="button"
+            (click)="onVerifyOtpSubmit()"
+            [disabled]="getOtpCode().length !== 6 || isLoading()"
+            class="btn-submit btn-emerald">
+            {{ isLoading() ? 'Validando código...' : 'Confirmar y activar cuenta' }}
+          </button>
+
+          <div class="otp-footer">
+            <button type="button" (click)="setMode('register')" class="back-link">
+              ← Cambiar correo
+            </button>
+
+            <span class="cooldown-text">
+              @if (cooldownSeconds() > 0) {
+                Reenviar en {{ cooldownSeconds() }}s
+              } @else {
+                <button type="button" (click)="resendCode()" class="link-switch">Reenviar código</button>
+              }
+            </span>
+          </div>
+        </div>
+      }
+
+    </div>
+  </main>
+</div>

@@ -1,0 +1,101 @@
+<div class="auth-wrapper">
+  
+  <!-- Barra superior con Escudo Verde -->
+  <header class="top-nav">
+    <div class="logo-container">
+      <div class="green-shield">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <span class="brand-text">
+        <span class="brand-dark">Cyber</span><span class="brand-green">Academy</span>
+      </span>
+    </div>
+
+    <div class="nav-right">
+      <span>Verificación de Seguridad</span>
+    </div>
+  </header>
+
+  <!-- Tarjeta Central de OTP -->
+  <main class="auth-main">
+    <div class="auth-card text-center">
+      
+      <!-- Icono central de escudo -->
+      <div class="center-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+
+      <h1 class="card-title">Verifica tu correo</h1>
+      <p class="card-subtitle">
+        Hemos enviado un código OTP de 6 dígitos a:<br>
+        <strong class="email-highlight">{{ email() }}</strong>
+      </p>
+
+      <!-- Mensajes de Error y Éxito -->
+      @if (errorMessage()) {
+        <div class="alert-error">
+          {{ errorMessage() }}
+        </div>
+      }
+
+      @if (successMessage()) {
+        <div class="alert-success">
+          {{ successMessage() }}
+        </div>
+      }
+
+      <!-- 6 Casillas para el código OTP -->
+      <div class="otp-inputs">
+        @for (digit of digits; track $index) {
+          <input
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            [value]="digits[$index]"
+            (input)="onDigitInput($event, $index)"
+            (keydown)="onKeyDown($event, $index)"
+            (paste)="onPaste($event)"
+            class="otp-box"
+          />
+        }
+      </div>
+
+      <p class="security-note">
+        Expira en 15 minutos · Máximo 5 intentos
+      </p>
+
+      <!-- Botón de Confirmación -->
+      <button
+        type="button"
+        (click)="verifyCode()"
+        [disabled]="getOtpCode().length !== 6 || isLoading()"
+        class="btn-submit">
+        {{ isLoading() ? 'Validando código...' : 'Confirmar y activar cuenta' }}
+      </button>
+
+      <!-- Reenvío de código con temporizador -->
+      <div class="resend-container">
+        ¿No recibiste el código?
+        @if (cooldownSeconds() > 0) {
+          <span class="cooldown-text">Reenviar en {{ cooldownSeconds() }}s</span>
+        } @else {
+          <button type="button" (click)="resendCode()" [disabled]="isResending()" class="resend-btn">
+            {{ isResending() ? 'Enviando...' : 'Reenviar código' }}
+          </button>
+        }
+      </div>
+
+      <div class="card-footer">
+        <a routerLink="/auth/register" class="back-link">
+          ← Volver al registro
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+</div>
