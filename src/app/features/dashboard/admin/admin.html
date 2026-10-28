@@ -1,45 +1,38 @@
 <div class="admin-layout">
-  
+
   <!-- =========================================================================
-       BARRA LATERAL IZQUIERDA (AZUL OSCURO #0B1B3D)
+       BARRA LATERAL IZQUIERDA
        ========================================================================= -->
   <aside class="sidebar">
     <div class="sidebar-top">
-      
-      <!-- Logo CyberAcademy con Subtítulo Administrador -->
+
       <div class="brand-container">
         <div class="brand-logo">
           <span class="brand-cyber">Cyber</span><span class="brand-academy">Academy</span>
         </div>
-        <div class="brand-subtitle">
-          Administrador
-        </div>
+        <div class="brand-subtitle">Administrador</div>
       </div>
 
-      <!-- Menú de Navegación del Administrador -->
       <nav class="nav-menu">
-        <!-- Pestaña Resumen -->
         <button
           type="button"
-          (click)="activeTab.set('resumen')"
+          (click)="selectTab('resumen')"
           [class.active]="activeTab() === 'resumen'"
           class="nav-item">
           Resumen
         </button>
 
-        <!-- Pestaña Módulos -->
         <button
           type="button"
-          (click)="activeTab.set('modulos')"
+          (click)="selectTab('modulos')"
           [class.active]="activeTab() === 'modulos'"
           class="nav-item">
           Módulos
         </button>
 
-        <!-- Pestaña Usuarios -->
         <button
           type="button"
-          (click)="activeTab.set('usuarios')"
+          (click)="selectTab('usuarios')"
           [class.active]="activeTab() === 'usuarios'"
           class="nav-item">
           Usuarios
@@ -47,23 +40,18 @@
       </nav>
     </div>
 
-    <!-- Enlace Inferior: Cerrar sesión -->
     <div class="sidebar-bottom">
-      <button
-        type="button"
-        (click)="logout()"
-        class="logout-btn">
+      <button type="button" (click)="logout()" class="logout-btn">
         <span>Cerrar sesión</span>
       </button>
     </div>
   </aside>
 
   <!-- =========================================================================
-       ÁREA PRINCIPAL DE CONTENIDO
+       ÁREA PRINCIPAL
        ========================================================================= -->
   <main class="main-content">
-    
-    <!-- Notificación al Exportar CSV -->
+
     @if (exportSuccess()) {
       <div class="export-banner">
         <div class="export-banner-text">
@@ -76,11 +64,9 @@
       </div>
     }
 
-    <!-- PESTAÑA 1: RESUMEN GENERAL (DISEÑO EXACTO DEL MOCKUP) -->
+    <!-- PESTAÑA 1: RESUMEN -->
     @if (activeTab() === 'resumen') {
       <div class="content-wrapper">
-        
-        <!-- Encabezado: Título + Botón Exportar Resultados -->
         <div class="header-row">
           <div>
             <h1 class="page-title">Resumen general</h1>
@@ -88,10 +74,7 @@
           </div>
 
           <div>
-            <button
-              type="button"
-              (click)="exportResults()"
-              class="btn-export">
+            <button type="button" (click)="exportResults()" class="btn-export">
               <svg class="icon-download" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
@@ -100,33 +83,24 @@
           </div>
         </div>
 
-        <!-- Fila de 3 Tarjetas de Métricas -->
         <div class="metrics-grid">
-          
-          <!-- Tarjeta 1: Estudiantes activos -->
           <div class="metric-card">
             <div class="metric-number text-navy">150</div>
             <div class="metric-label">Estudiantes activos</div>
           </div>
 
-          <!-- Tarjeta 2: Completaron los 6 módulos -->
           <div class="metric-card">
             <div class="metric-number text-emerald">62%</div>
             <div class="metric-label">Completaron los 6 módulos</div>
           </div>
 
-          <!-- Tarjeta 3: Mejora promedio -->
           <div class="metric-card">
             <div class="metric-number text-emerald">+40 pts</div>
             <div class="metric-label">Mejora promedio (diagnóstica vs. final)</div>
           </div>
-
         </div>
 
-        <!-- Grilla Inferior de 2 Columnas -->
         <div class="panels-grid">
-          
-          <!-- Tarjeta Izquierda: Estudiantes que completaron cada módulo -->
           <div class="panel-card panel-left">
             <h2 class="panel-title">Estudiantes que completaron cada módulo</h2>
 
@@ -135,12 +109,8 @@
                 <div class="module-row">
                   <div class="module-name">{{ mod.name }}</div>
 
-                  <!-- Barra de Progreso Verde -->
                   <div class="progress-track">
-                    <div
-                      class="progress-fill"
-                      [style.width.%]="mod.percentage"
-                    ></div>
+                    <div class="progress-fill" [style.width.%]="mod.percentage"></div>
                   </div>
 
                   <div class="module-percentage">{{ mod.percentage }}%</div>
@@ -149,7 +119,6 @@
             </div>
           </div>
 
-          <!-- Tarjeta Derecha: Últimos ingresos -->
           <div class="panel-card panel-right">
             <h2 class="panel-title">Últimos ingresos</h2>
 
@@ -162,51 +131,156 @@
               }
             </div>
           </div>
-
         </div>
-
       </div>
     }
 
-    <!-- PESTAÑA 2: DETALLE DE MÓDULOS -->
+    <!-- PESTAÑA 2: GESTIÓN DE MÓDULOS -->
     @if (activeTab() === 'modulos') {
       <div class="content-wrapper">
-        <div class="tab-header">
-          <h1 class="page-title">Módulos de Capacitación Práctica</h1>
-          <p class="page-subtitle">Progreso y tasas de completitud de los laboratorios interactivos de ciberseguridad.</p>
+        <div class="header-row">
+          <div class="tab-header">
+            <h1 class="page-title">Módulos de capacitación</h1>
+            <p class="page-subtitle">
+              Crea módulos y ajusta el peso de sus 3 sesiones de teoría y 1 de práctica.
+            </p>
+          </div>
+
+          <button type="button" class="btn-export" (click)="showCreateForm() ? cancelCreateForm() : openCreateForm()">
+            {{ showCreateForm() ? 'Cancelar' : '+ Nuevo módulo' }}
+          </button>
         </div>
 
-        <div class="modules-catalog-grid">
-          @for (m of modules; track m.id) {
-            <div class="module-detail-card">
-              <div>
-                <div class="module-tag-row">
-                  <span class="module-badge">Módulo 0{{ m.id }}</span>
-                  <span class="module-time">{{ m.avgTime }}</span>
-                </div>
-                <h3 class="module-detail-title">{{ m.name }}</h3>
-                <p class="module-detail-category">{{ m.category }}</p>
-              </div>
+        @if (modulesMessage()) {
+          <div class="admin-message">{{ modulesMessage() }}</div>
+        }
 
-              <div class="module-detail-footer">
-                <div class="footer-stat-row">
-                  <span class="footer-stat-label">Completado por</span>
-                  <span class="footer-stat-value">{{ m.percentage }}%</span>
-                </div>
-                <div class="progress-track">
-                  <div class="progress-fill" [style.width.%]="m.percentage"></div>
-                </div>
-                <div class="module-graduates-text">
-                  {{ m.studentsCompleted }} estudiantes completaron este desafío
-                </div>
-              </div>
+        @if (showCreateForm()) {
+          <div class="form-card">
+            <h2 class="panel-title">Nuevo módulo</h2>
+
+            @if (createError()) {
+              <div class="form-error">{{ createError() }}</div>
+            }
+
+            <div class="form-grid">
+              <label class="form-field">
+                <span>Código</span>
+                <input [(ngModel)]="newModule.code" type="text" maxlength="50" placeholder="MOD-01" />
+              </label>
+
+              <label class="form-field">
+                <span>Título</span>
+                <input [(ngModel)]="newModule.title" type="text" maxlength="150" placeholder="Fundamentos de ciberseguridad" />
+              </label>
+
+              <label class="form-field span-2">
+                <span>Descripción</span>
+                <textarea [(ngModel)]="newModule.description" rows="2" maxlength="2000" placeholder="Descripción breve del módulo"></textarea>
+              </label>
+
+              <label class="form-field">
+                <span>Orden</span>
+                <input [(ngModel)]="newModule.orderIndex" type="number" min="1" />
+              </label>
+
+              <label class="form-field">
+                <span>Nota mínima</span>
+                <input [(ngModel)]="newModule.passingScore" type="number" min="0" max="100" step="0.01" />
+              </label>
             </div>
-          }
-        </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn-modal-cancel" (click)="cancelCreateForm()">Cancelar</button>
+              <button type="button" class="btn-save-score" [disabled]="creating()" (click)="createModule()">
+                {{ creating() ? 'Creando…' : 'Crear módulo' }}
+              </button>
+            </div>
+
+            <p class="form-hint">
+              Al crearlo se generan automáticamente 3 sesiones de teoría (20% cada una) y 1 práctica (40%).
+            </p>
+          </div>
+        }
+
+        @if (modulesLoading()) {
+          <div class="state-box">Cargando módulos…</div>
+        } @else if (modulesError()) {
+          <div class="error-banner">
+            <span>{{ modulesError() }}</span>
+            <button type="button" class="btn-retry" (click)="loadModules()">Reintentar</button>
+          </div>
+        } @else if (realModules().length === 0) {
+          <div class="state-box">
+            <p>Todavía no hay módulos creados.</p>
+            <p class="state-hint">Usa “Nuevo módulo” para crear el primero.</p>
+          </div>
+        } @else {
+          <div class="modules-catalog-grid">
+            @for (m of realModules(); track m.id) {
+              <div class="module-detail-card">
+                <div>
+                  <div class="module-tag-row">
+                    <span class="module-badge">{{ m.code }}</span>
+                    <span class="module-state" [class.inactive]="!m.active">
+                      {{ m.active ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </div>
+
+                  <h3 class="module-detail-title">{{ m.title }}</h3>
+                  <p class="module-detail-category">{{ m.description || 'Sin descripción' }}</p>
+                  <p class="module-meta">
+                    Nota mínima: {{ m.passingScore }} pts · Orden {{ m.orderIndex }}
+                  </p>
+                </div>
+
+                <div class="weights-block">
+                  <div class="weights-header">
+                    <span>Pesos de las secciones</span>
+                    <span [class.weight-total-bad]="!isWeightTotalValid(m)">
+                      Total: {{ moduleTotal(m) }}%
+                    </span>
+                  </div>
+
+                  @for (s of m.sections; track s.id) {
+                    <div class="weight-row">
+                      <span class="weight-name">
+                        {{ s.type === 'PRACTICE' ? 'Práctica' : 'Teoría ' + s.order }}
+                      </span>
+                      <input
+                        class="weight-input"
+                        type="number"
+                        min="0.01"
+                        max="100"
+                        step="0.01"
+                        [ngModel]="weightFor(m.id, s.id)"
+                        (ngModelChange)="setWeight(m.id, s.id, $event)" />
+                      <span class="weight-suffix">%</span>
+                    </div>
+                  }
+
+                  <button
+                    type="button"
+                    class="btn-save-score full"
+                    [disabled]="savingWeights() === m.id"
+                    (click)="saveWeights(m)">
+                    {{ savingWeights() === m.id ? 'Guardando…' : 'Guardar pesos' }}
+                  </button>
+                </div>
+
+                <div class="module-detail-footer">
+                  <button type="button" class="btn-toggle-active" (click)="toggleActive(m)">
+                    {{ m.active ? 'Desactivar módulo' : 'Activar módulo' }}
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
       </div>
     }
 
-    <!-- PESTAÑA 3: GESTIÓN DE USUARIOS -->
+    <!-- PESTAÑA 3: USUARIOS -->
     @if (activeTab() === 'usuarios') {
       <div class="content-wrapper">
         <div class="tab-header">

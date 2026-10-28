@@ -517,3 +517,230 @@
   background-color: #10b981;
   border-radius: 9999px;
 }
+
+.breakdown-pct {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* -------------------------------------------------------------------------
+   NUEVOS ESTILOS CONECTADOS A LA API
+   ------------------------------------------------------------------------- */
+
+.module-code {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.25rem;
+}
+
+.card-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.card-progress .progress-bar-track {
+  flex: 1;
+}
+
+.card-progress-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  min-width: 2.6rem;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.module-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.card-sections {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.badge-failed {
+  color: #e11d48;
+}
+
+.badge-not-started {
+  color: #64748b;
+}
+
+.state-box {
+  background-color: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.state-box p {
+  margin: 0.15rem 0;
+}
+
+.state-hint {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background-color: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #9f1239;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.btn-retry {
+  background-color: #0f172a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.modal-container {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-min-score {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.modal-message {
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.sections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.section-row {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+@media (min-width: 560px) {
+  .section-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.section-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.section-type {
+  align-self: flex-start;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #0b1b3d;
+  background-color: #e8eef8;
+  border-radius: 6px;
+  padding: 0.1rem 0.4rem;
+}
+
+.section-type.practice {
+  color: #7c2d12;
+  background-color: #ffedd5;
+}
+
+.section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.section-meta {
+  font-size: 0.73rem;
+  color: #64748b;
+}
+
+.score-form {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.score-input {
+  width: 5.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  color: #0f172a;
+  outline: none;
+}
+
+.score-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.btn-save-score {
+  background-color: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-save-score:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.btn-save-score:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

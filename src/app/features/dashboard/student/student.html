@@ -1,70 +1,77 @@
 <div class="student-page">
-  
-  <!-- Encabezado superior con logotipo y título de panel -->
+
+  <!-- Encabezado -->
   <header class="student-header">
     <div class="header-inner">
       <div class="brand-logo">
         <span class="brand-cyber">Cyber</span><span class="brand-academy">Academy</span>
       </div>
-      <div class="header-label">
-        Panel de módulos
-      </div>
+      <div class="header-label">Panel de módulos</div>
     </div>
   </header>
 
-  <!-- Contenido principal -->
   <main class="student-main">
     <div class="student-wrapper">
-      
-      <!-- Saludo y subtítulo de nivel y puntos -->
+
       <section class="welcome-section">
         <h1 class="welcome-title">Hola, {{ studentName() }}</h1>
         <p class="welcome-meta">
-          {{ points() }} pts · Nivel {{ level() }} · Los módulos se desbloquean en orden
+          {{ summaries().length }} módulos · {{ completedCount() }} completados · {{ overallProgress() }}% de avance
         </p>
       </section>
 
-      <!-- Cuadrícula de 6 tarjetas de módulos (3 columnas x 2 filas) -->
-      <section class="modules-grid">
-        <article
-          *ngFor="let module of modules()"
-          class="module-card"
-          (click)="openModule(module)"
-          role="button"
-          tabindex="0"
-          [attr.aria-label]="module.title">
-          
-          <div class="module-card-content">
-            <h2 class="module-title">{{ module.title }}</h2>
-            <p class="module-desc">{{ module.description }}</p>
-          </div>
+      @if (loading()) {
+        <div class="state-box">Cargando tus módulos…</div>
+      } @else if (error()) {
+        <div class="error-banner">
+          <span>{{ error() }}</span>
+          <button type="button" class="btn-retry" (click)="loadProgress()">Reintentar</button>
+        </div>
+      } @else if (summaries().length === 0) {
+        <div class="state-box">
+          <p>Aún no hay módulos disponibles.</p>
+          <p class="state-hint">Cuando el administrador cree módulos aparecerán aquí.</p>
+        </div>
+      } @else {
+        <section class="modules-grid">
+          @for (module of summaries(); track module.moduleId) {
+            <article
+              class="module-card"
+              role="button"
+              tabindex="0"
+              [attr.aria-label]="module.title"
+              (click)="openModule(module)"
+              (keyup.enter)="openModule(module)">
 
-          <div class="module-card-footer">
-            <span
-              class="module-badge"
-              [class.badge-completed]="module.status === 'completed'"
-              [class.badge-in-progress]="module.status === 'in_progress'"
-              [class.badge-available]="module.status === 'available'">
-              {{ module.statusLabel }}
-            </span>
-          </div>
+              <div class="module-card-content">
+                <span class="module-code">{{ module.code }}</span>
+                <h2 class="module-title">{{ module.title }}</h2>
+                <p class="module-desc">{{ module.description || 'Módulo de ciberseguridad' }}</p>
+              </div>
 
-        </article>
-      </section>
+              <div class="card-progress">
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill" [style.width.%]="module.progressPercent"></div>
+                </div>
+                <span class="card-progress-text">{{ module.progressPercent }}%</span>
+              </div>
 
-      <!-- Botones de Acción -->
+              <div class="module-card-footer">
+                <span class="module-badge" [ngClass]="statusClass(module.status)">
+                  {{ cardLabel(module) }}
+                </span>
+                <span class="card-sections">{{ module.completedSections }}/{{ module.totalSections }} secciones</span>
+              </div>
+            </article>
+          }
+        </section>
+      }
+
       <section class="actions-section">
-        <button
-          type="button"
-          class="btn-primary-action"
-          (click)="openResults()">
+        <button type="button" class="btn-primary-action" (click)="openResults()">
           Ver mis resultados
         </button>
-
-        <button
-          type="button"
-          class="btn-secondary-action"
-          (click)="logout()">
+        <button type="button" class="btn-secondary-action" (click)="logout()">
           Cerrar sesión
         </button>
       </section>
@@ -72,126 +79,163 @@
     </div>
   </main>
 
-  <!-- Modal Interactivo: Detalle y Objetivos del Módulo -->
-  <div *ngIf="selectedModule()" class="modal-backdrop" (click)="closeModule()">
-    <div class="modal-container" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <div>
-          <span class="modal-badge-category">{{ selectedModule()?.category }}</span>
-          <h3 class="modal-title">{{ selectedModule()?.title }}</h3>
-        </div>
-        <button type="button" class="modal-close-btn" (click)="closeModule()">✕</button>
-      </div>
+  <!-- Modal: detalle del módulo + registro de notas -->
+  @if (loadingDetail() || selectedProgress()) {
+    <div class="modal-backdrop" (click)="closeModule()">
+      <div class="modal-container" (click)="$event.stopPropagation()">
 
-      <div class="modal-body">
-        <p class="modal-description">{{ selectedModule()?.description }}</p>
-
-        <div class="modal-status-box">
-          <div class="modal-status-row">
-            <span class="modal-status-label">Estado actual:</span>
-            <span
-              class="modal-badge-status"
-              [class.badge-completed]="selectedModule()?.status === 'completed'"
-              [class.badge-in-progress]="selectedModule()?.status === 'in_progress'"
-              [class.badge-available]="selectedModule()?.status === 'available'">
-              {{ selectedModule()?.statusLabel }}
-            </span>
+        @if (loadingDetail()) {
+          <div class="modal-body">Cargando módulo…</div>
+        } @else if (selectedProgress(); as progress) {
+          <div class="modal-header">
+            <div>
+              <span class="modal-badge-category">{{ progress.summary.code }}</span>
+              <h3 class="modal-title">{{ progress.summary.title }}</h3>
+            </div>
+            <button type="button" class="modal-close-btn" (click)="closeModule()">✕</button>
           </div>
 
-          <div *ngIf="selectedModule()?.progressPercentage" class="progress-bar-wrapper">
-            <div class="progress-bar-track">
-              <div
-                class="progress-bar-fill"
-                [style.width.%]="selectedModule()?.progressPercentage">
+          <div class="modal-body">
+            <p class="modal-description">{{ progress.summary.description }}</p>
+
+            <div class="modal-status-box">
+              <div class="modal-status-row">
+                <span class="modal-status-label">
+                  Estado: <strong>{{ statusLabel(progress.summary.status) }}</strong>
+                </span>
+                <span class="modal-badge-status" [ngClass]="statusClass(progress.summary.status)">
+                  {{ progress.summary.score !== null ? progress.summary.score + ' pts' : 'Sin nota' }}
+                </span>
+              </div>
+
+              <div class="progress-bar-wrapper">
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill" [style.width.%]="progress.summary.progressPercent"></div>
+                </div>
+                <span class="progress-bar-text">{{ progress.summary.progressPercent }}%</span>
+              </div>
+
+              <div class="modal-min-score">
+                Nota mínima para aprobar: {{ progress.summary.passingScore }} pts ·
+                {{ progress.summary.completedSections }}/{{ progress.summary.totalSections }} secciones completadas
               </div>
             </div>
-            <span class="progress-bar-text">{{ selectedModule()?.progressPercentage }}% completado</span>
+
+            @if (modalMessage()) {
+              <div class="modal-message">{{ modalMessage() }}</div>
+            }
+
+            <div class="sections-list">
+              <h4 class="objectives-title">Sesiones del módulo</h4>
+
+              @for (section of progress.sections; track section.sectionId) {
+                <div class="section-row">
+                  <div class="section-info">
+                    <span class="section-type" [class.practice]="section.type === 'PRACTICE'">
+                      {{ sectionLabel(section) }}
+                    </span>
+                    <span class="section-title">{{ section.title }}</span>
+                    <span class="section-meta">
+                      Peso {{ section.weightPercent }}% ·
+                      <span [ngClass]="statusClass(section.status)">{{ statusLabel(section.status) }}</span>
+                      @if (section.score !== null) {
+                        · {{ section.score }} pts
+                      }
+                      @if (section.attempts > 0) {
+                        · {{ section.attempts }} intento(s)
+                      }
+                    </span>
+                  </div>
+
+                  <div class="score-form">
+                    <input
+                      class="score-input"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="0-100"
+                      [ngModel]="scores()[section.sectionId]"
+                      (ngModelChange)="setDraft(section.sectionId, $event)" />
+                    <button
+                      type="button"
+                      class="btn-save-score"
+                      [disabled]="savingSectionId() === section.sectionId"
+                      (click)="saveScore(section)">
+                      {{ savingSectionId() === section.sectionId ? '…' : 'Guardar' }}
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
           </div>
-        </div>
 
-        <div class="modal-objectives">
-          <h4 class="objectives-title">Objetivos de Aprendizaje:</h4>
-          <ul class="objectives-list">
-            <li *ngFor="let obj of selectedModule()?.detailedObjectives">
-              <span class="bullet-check">✓</span> {{ obj }}
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn-modal-cancel" (click)="closeModule()">Volver</button>
-        <button type="button" class="btn-modal-start" (click)="closeModule()">
-          {{ selectedModule()?.status === 'completed' ? 'Repasar módulo' : selectedModule()?.status === 'in_progress' ? 'Continuar práctica' : 'Iniciar módulo' }}
-        </button>
+          <div class="modal-footer">
+            <button type="button" class="btn-modal-cancel" (click)="closeModule()">Cerrar</button>
+          </div>
+        }
       </div>
     </div>
-  </div>
+  }
 
-  <!-- Modal Interactivo: Ver mis Resultados -->
-  <div *ngIf="showResultsModal()" class="modal-backdrop" (click)="closeResults()">
-    <div class="modal-container modal-results" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <div>
-          <span class="modal-badge-category">Rendimiento Académico</span>
-          <h3 class="modal-title">Resultados de {{ studentName() }}</h3>
-        </div>
-        <button type="button" class="modal-close-btn" (click)="closeResults()">✕</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="results-stats-grid">
-          <div class="results-stat-card">
-            <span class="stat-number">{{ points() }}</span>
-            <span class="stat-label">Puntos Totales</span>
+  <!-- Modal: resultados -->
+  @if (showResultsModal()) {
+    <div class="modal-backdrop" (click)="closeResults()">
+      <div class="modal-container modal-results" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <span class="modal-badge-category">Rendimiento académico</span>
+            <h3 class="modal-title">Resultados de {{ studentName() }}</h3>
           </div>
-          <div class="results-stat-card">
-            <span class="stat-number">Nivel {{ level() }}</span>
-            <span class="stat-label">Rango</span>
-          </div>
-          <div class="results-stat-card">
-            <span class="stat-number">90%</span>
-            <span class="stat-label">Precisión Phishing</span>
-          </div>
-          <div class="results-stat-card">
-            <span class="stat-number">2 / 6</span>
-            <span class="stat-label">Módulos Abordados</span>
-          </div>
+          <button type="button" class="modal-close-btn" (click)="closeResults()">✕</button>
         </div>
 
-        <div class="results-breakdown">
-          <h4 class="breakdown-title">Desglose por Módulo de Seguridad</h4>
-          
-          <div class="breakdown-item">
-            <div class="breakdown-info">
-              <span class="breakdown-name">1. Bandeja de entrada</span>
-              <span class="breakdown-pct text-emerald">90% (Excelente)</span>
+        <div class="modal-body">
+          <div class="results-stats-grid">
+            <div class="results-stat-card">
+              <span class="stat-number">{{ summaries().length }}</span>
+              <span class="stat-label">Módulos</span>
             </div>
-            <div class="breakdown-bar"><div class="breakdown-fill" style="width: 90%;"></div></div>
+            <div class="results-stat-card">
+              <span class="stat-number">{{ completedCount() }}</span>
+              <span class="stat-label">Completados</span>
+            </div>
+            <div class="results-stat-card">
+              <span class="stat-number">{{ averageScore() ?? '—' }}</span>
+              <span class="stat-label">Nota media</span>
+            </div>
+            <div class="results-stat-card">
+              <span class="stat-number">{{ overallProgress() }}%</span>
+              <span class="stat-label">Avance</span>
+            </div>
           </div>
 
-          <div class="breakdown-item">
-            <div class="breakdown-info">
-              <span class="breakdown-name">2. Crea tu contraseña</span>
-              <span class="breakdown-pct text-emerald">40% (En curso)</span>
-            </div>
-            <div class="breakdown-bar"><div class="breakdown-fill" style="width: 40%;"></div></div>
-          </div>
+          <div class="results-breakdown">
+            <h4 class="breakdown-title">Desglose por módulo</h4>
 
-          <div class="breakdown-item">
-            <div class="breakdown-info">
-              <span class="breakdown-name">3. Perfil expuesto</span>
-              <span class="breakdown-pct text-muted">Disponible</span>
-            </div>
-            <div class="breakdown-bar"><div class="breakdown-fill" style="width: 0%;"></div></div>
+            @for (summary of summaries(); track summary.moduleId) {
+              <div class="breakdown-item">
+                <div class="breakdown-info">
+                  <span class="breakdown-name">{{ summary.code }} · {{ summary.title }}</span>
+                  <span
+                    class="breakdown-pct"
+                    [ngClass]="summary.passed ? 'text-emerald' : 'text-muted'">
+                    {{ summary.score !== null ? summary.score + ' pts' : statusLabel(summary.status) }}
+                  </span>
+                </div>
+                <div class="breakdown-bar">
+                  <div class="breakdown-fill" [style.width.%]="summary.progressPercent"></div>
+                </div>
+              </div>
+            }
           </div>
         </div>
-      </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn-modal-cancel" (click)="closeResults()">Cerrar</button>
+        <div class="modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closeResults()">Cerrar</button>
+        </div>
       </div>
     </div>
-  </div>
+  }
 
 </div>
