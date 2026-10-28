@@ -1,36 +1,13 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { ModulesService } from '../../../core/services/modules';
-import { CourseModuleResponse } from '../../../core/models/course-module.model';
-
-export interface ModuleItem {
-  id: number;
-  name: string;
-  category: string;
-  percentage: number;
-  studentsCompleted: number;
-  avgTime: string;
-}
-
-export interface ActivityItem {
-  name: string;
-  activity: string;
-  timeAgo: string;
-}
-
-export interface StudentUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  modulesCompleted: number;
-  diagnosticScore: number;
-  finalScore: number;
-}
+import { AdminDashboardService } from '../../../core/services/admin-dashboard';
+import { CourseModuleResponse, ModuleSummary, ProgressStatus } from '../../../core/models/course-module.model';
+import { AdminOverview, StudentOverview } from '../../../core/models/admin-dashboard.model';
+import { UserStatus } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -42,13 +19,30 @@ export interface StudentUser {
 export class AdminDashboardComponent implements OnInit {
   private authService = inject(AuthService);
   private modulesService = inject(ModulesService);
+  private adminDashboardService = inject(AdminDashboardService);
   private router = inject(Router);
 
   user = this.authService.currentUserSignal;
   activeTab = signal<'resumen' | 'modulos' | 'usuarios'>('resumen');
   exportSuccess = signal(false);
 
-  // --- Gestión real de módulos ---
+  // --- Resumen global (datos reales) ---
+  overview = signal<AdminOverview | null>(null);
+  overviewLoading = signal(true);
+  overviewError = signal<string | null>(null);
+
+  // --- Estudiantes (datos reales) ---
+  students = signal<StudentOverview[]>([]);
+  studentsLoading = signal(true);
+  studentsError = signal<string | null>(null);
+
+  // --- Detalle del progreso de un estudiante ---
+  selectedStudent = signal<StudentOverview | null>(null);
+  studentProgress = signal<ModuleSummary[] | null>(null);
+  studentProgressLoading = signal(false);
+  studentProgressError = signal<string | null>(null);
+
+  // --- Gestión de módulos ---
   realModules = signal<CourseModuleResponse[]>([]);
   modulesLoading = signal(false);
   modulesError = signal<string | null>(null);
@@ -62,42 +56,96 @@ export class AdminDashboardComponent implements OnInit {
   weightDrafts = signal<Record<string, Record<string, number>>>({});
   savingWeights = signal<string | null>(null);
 
-  // Datos de demostración de las pestañas Resumen y Usuarios
-  modules: ModuleItem[] = [
-    { id: 1, name: '1. Bandeja de entrada', category: 'Phishing e Ingeniería Social', percentage: 93, studentsCompleted: 140, avgTime: '12 min' },
-    { id: 2, name: '2. Crea tu contraseña', category: 'Autenticación y Credenciales', percentage: 81, studentsCompleted: 122, avgTime: '15 min' },
-    { id: 3, name: '3. Perfil expuesto', category: 'Privacidad y Huella Digital', percentage: 70, studentsCompleted: 105, avgTime: '18 min' },
-    { id: 4, name: '4. La foto delatora', category: 'Metadatos y Geolocalización', percentage: 58, studentsCompleted: 87, avgTime: '14 min' },
-    { id: 5, name: '5. Wi-Fi del café', category: 'Redes no seguras y MitM', percentage: 52, studentsCompleted: 78, avgTime: '20 min' },
-    { id: 6, name: '6. Desafío final', category: 'Simulación Integral', percentage: 47, studentsCompleted: 71, avgTime: '25 min' },
-  ];
-
-  recentActivities: ActivityItem[] = [
-    { name: 'Sofía Rivera', activity: 'Completó el Desafío final', timeAgo: 'Hace 5 min' },
-    { name: 'Luis Moreno', activity: 'Terminó el Módulo 3', timeAgo: 'Hace 18 min' },
-    { name: 'Ana Pérez', activity: 'Empezó el Módulo 5', timeAgo: 'Hace 42 min' },
-    { name: 'Daniel Ruiz', activity: 'Hizo la prueba diagnóstica', timeAgo: 'Hace 1 hora' },
-  ];
-
-  students: StudentUser[] = [
-    { id: '1', name: 'Sofía Rivera', email: 'sofia.rivera@cyberacademy.com', role: 'STUDENT', status: 'Activo', modulesCompleted: 6, diagnosticScore: 48, finalScore: 92 },
-    { id: '2', name: 'Luis Moreno', email: 'luis.moreno@cyberacademy.com', role: 'STUDENT', status: 'Activo', modulesCompleted: 3, diagnosticScore: 50, finalScore: 84 },
-    { id: '3', name: 'Ana Pérez', email: 'ana.perez@cyberacademy.com', role: 'STUDENT', status: 'Activo', modulesCompleted: 4, diagnosticScore: 55, finalScore: 88 },
-    { id: '4', name: 'Daniel Ruiz', email: 'daniel.ruiz@cyberacademy.com', role: 'STUDENT', status: 'Activo', modulesCompleted: 1, diagnosticScore: 42, finalScore: 78 },
-  ];
+  completionRate = computed(() => {
+    const data = this.overview();
+    if (!data || data.totalStudents === 0) return 0;
+    return Math.round((data.studentsCompletedAll / data.totalStudents) * 100);
+  });
 
   ngOnInit(): void {
+    this.loadOverview();
+    this.loadStudents();
     this.loadModules();
   }
 
   selectTab(tab: 'resumen' | 'modulos' | 'usuarios'): void {
     this.activeTab.set(tab);
-    if (tab === 'modulos') {
+    if (tab === 'resumen') {
+      this.loadOverview();
+    } else if (tab === 'modulos') {
       this.loadModules();
+    } else {
+      this.loadStudents();
     }
   }
 
-  // --- Módulos ---
+  // =========================================================================
+  // Resumen
+  // =========================================================================
+
+  loadOverview(): void {
+    this.overviewLoading.set(true);
+    this.overviewError.set(null);
+
+    this.adminDashboardService.getOverview().subscribe({
+      next: (res) => {
+        this.overview.set(res.data ?? null);
+        this.overviewLoading.set(false);
+      },
+      error: (err) => {
+        this.overviewLoading.set(false);
+        this.overviewError.set(this.readError(err, 'No se pudo cargar el resumen.'));
+      }
+    });
+  }
+
+  // =========================================================================
+  // Estudiantes
+  // =========================================================================
+
+  loadStudents(): void {
+    this.studentsLoading.set(true);
+    this.studentsError.set(null);
+
+    this.adminDashboardService.getStudents().subscribe({
+      next: (res) => {
+        this.students.set(res.data ?? []);
+        this.studentsLoading.set(false);
+      },
+      error: (err) => {
+        this.studentsLoading.set(false);
+        this.studentsError.set(this.readError(err, 'No se pudieron cargar los estudiantes.'));
+      }
+    });
+  }
+
+  openStudentDetail(student: StudentOverview): void {
+    this.selectedStudent.set(student);
+    this.studentProgress.set(null);
+    this.studentProgressError.set(null);
+    this.studentProgressLoading.set(true);
+
+    this.modulesService.getStudentProgress(student.userId).subscribe({
+      next: (res) => {
+        this.studentProgress.set(res.data ?? []);
+        this.studentProgressLoading.set(false);
+      },
+      error: (err) => {
+        this.studentProgressLoading.set(false);
+        this.studentProgressError.set(this.readError(err, 'No se pudo cargar el progreso del estudiante.'));
+      }
+    });
+  }
+
+  closeStudentDetail(): void {
+    this.selectedStudent.set(null);
+    this.studentProgress.set(null);
+    this.studentProgressError.set(null);
+  }
+
+  // =========================================================================
+  // Gestión de módulos
+  // =========================================================================
 
   loadModules(): void {
     this.modulesLoading.set(true);
@@ -154,6 +202,7 @@ export class AdminDashboardComponent implements OnInit {
           this.showCreateForm.set(false);
           this.newModule = { code: '', title: '', description: '', orderIndex: 1, passingScore: 70 };
           this.loadModules();
+          this.loadOverview();
           this.modulesMessage.set(`Módulo ${res.data?.code ?? code} creado con sus 4 secciones.`);
         },
         error: (err) => {
@@ -207,6 +256,7 @@ export class AdminDashboardComponent implements OnInit {
       next: () => {
         this.savingWeights.set(null);
         this.loadModules();
+        this.loadOverview();
         this.modulesMessage.set(`Pesos de ${module.code} actualizados y notas recalculadas.`);
       },
       error: (err) => {
@@ -220,6 +270,7 @@ export class AdminDashboardComponent implements OnInit {
     this.modulesService.updateModule(module.id, { active: !module.active }).subscribe({
       next: () => {
         this.loadModules();
+        this.loadOverview();
         this.modulesMessage.set(
           `Módulo ${module.code} ${module.active ? 'desactivado' : 'activado'} correctamente.`
         );
@@ -228,15 +279,28 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
-  // --- Exportación y sesión ---
+  // =========================================================================
+  // Exportación y sesión
+  // =========================================================================
 
   exportResults(): void {
-    const csvHeader = 'Nombre,Correo,Rol,Estado,ModulosCompletados,PuntajeDiagnostico,PuntajeFinal\n';
-    const csvRows = this.students.map(s =>
-      `"${s.name}","${s.email}","${s.role}","${s.status}",${s.modulesCompleted},${s.diagnosticScore},${s.finalScore}`
-    ).join('\n');
+    const header = ['Nombre', 'Correo', 'Estado', 'Modulos completados', 'Total modulos', 'Nota media', 'Avance', 'Ultima actividad'];
+    const rows = this.students().map((student) => [
+      `${student.firstName} ${student.lastName}`,
+      student.email,
+      this.userStatusLabel(student.status),
+      String(student.modulesCompleted),
+      String(student.modulesTotal),
+      student.averageScore === null ? '' : String(student.averageScore),
+      `${student.progressPercent}%`,
+      this.formatDate(student.lastActivityAt)
+    ]);
 
-    const blob = new Blob([csvHeader + csvRows], { type: 'text/csv;charset=utf-8;' });
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -244,6 +308,7 @@ export class AdminDashboardComponent implements OnInit {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
     this.exportSuccess.set(true);
     setTimeout(() => this.exportSuccess.set(false), 3000);
@@ -254,7 +319,96 @@ export class AdminDashboardComponent implements OnInit {
     this.router.navigate(['/auth/login']);
   }
 
-  // --- Utilidades ---
+  // =========================================================================
+  // Utilidades de presentación
+  // =========================================================================
+
+  fullName(student: StudentOverview): string {
+    return `${student.firstName} ${student.lastName}`.trim();
+  }
+
+  userStatusLabel(status: UserStatus): string {
+    switch (status) {
+      case 'ACTIVE':
+        return 'Activo';
+      case 'SUSPENDED':
+        return 'Suspendido';
+      default:
+        return 'Pendiente';
+    }
+  }
+
+  userStatusClass(status: UserStatus): string {
+    switch (status) {
+      case 'ACTIVE':
+        return 'status-active';
+      case 'SUSPENDED':
+        return 'status-suspended';
+      default:
+        return 'status-pending';
+    }
+  }
+
+  moduleStatusLabel(status: ProgressStatus): string {
+    switch (status) {
+      case 'COMPLETED':
+        return 'Completado';
+      case 'IN_PROGRESS':
+        return 'En curso';
+      case 'FAILED':
+        return 'No aprobado';
+      default:
+        return 'Sin empezar';
+    }
+  }
+
+  moduleStatusClass(status: ProgressStatus): string {
+    switch (status) {
+      case 'COMPLETED':
+        return 'badge-completed';
+      case 'IN_PROGRESS':
+        return 'badge-in-progress';
+      case 'FAILED':
+        return 'badge-failed';
+      default:
+        return 'badge-not-started';
+    }
+  }
+
+  formatScore(value: number | null): string {
+    return value === null || value === undefined ? '—' : String(value);
+  }
+
+  relativeTime(iso: string | null): string {
+    if (!iso) return 'Sin actividad';
+
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const minutes = Math.floor(diffMs / 60000);
+
+    if (minutes < 1) return 'Ahora mismo';
+    if (minutes < 60) return `Hace ${minutes} min`;
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `Hace ${hours} h`;
+
+    const days = Math.floor(hours / 24);
+    if (days < 30) return `Hace ${days} día${days === 1 ? '' : 's'}`;
+
+    return this.formatDate(iso);
+  }
+
+  formatDate(iso: string | null): string {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  // =========================================================================
+  // Internos
+  // =========================================================================
 
   private buildWeightDrafts(modules: CourseModuleResponse[]): Record<string, Record<string, number>> {
     const drafts: Record<string, Record<string, number>> = {};
@@ -271,6 +425,9 @@ export class AdminDashboardComponent implements OnInit {
     const error = err as { status?: number; error?: { message?: string } };
     if (error?.status === 0) {
       return 'No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.';
+    }
+    if (error?.status === 403) {
+      return 'Tu usuario no tiene permisos de administrador.';
     }
     return error?.error?.message || fallback;
   }

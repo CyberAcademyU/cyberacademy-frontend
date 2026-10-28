@@ -70,11 +70,11 @@
         <div class="header-row">
           <div>
             <h1 class="page-title">Resumen general</h1>
-            <p class="page-subtitle">Vista de todos los estudiantes de CyberAcademy</p>
+            <p class="page-subtitle">Actividad real de los estudiantes de CyberAcademy</p>
           </div>
 
           <div>
-            <button type="button" (click)="exportResults()" class="btn-export">
+            <button type="button" (click)="exportResults()" class="btn-export" [disabled]="students().length === 0">
               <svg class="icon-download" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
@@ -83,55 +83,91 @@
           </div>
         </div>
 
-        <div class="metrics-grid">
-          <div class="metric-card">
-            <div class="metric-number text-navy">150</div>
-            <div class="metric-label">Estudiantes activos</div>
+        @if (overviewLoading()) {
+          <div class="state-box">Cargando resumen…</div>
+        } @else if (overviewError()) {
+          <div class="error-banner">
+            <span>{{ overviewError() }}</span>
+            <button type="button" class="btn-retry" (click)="loadOverview()">Reintentar</button>
+          </div>
+        } @else if (overview(); as data) {
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-number text-navy">{{ data.totalStudents }}</div>
+              <div class="metric-label">Estudiantes registrados</div>
+              <div class="metric-sub">{{ data.activeStudents }} activos</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-number text-emerald">{{ data.studentsCompletedAll }}</div>
+              <div class="metric-label">Completaron todos los módulos</div>
+              <div class="metric-sub">{{ completionRate() }}% del total</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-number text-emerald">{{ formatScore(data.averageScore) }}</div>
+              <div class="metric-label">Nota media</div>
+              <div class="metric-sub">Avance medio {{ data.averageProgress }}%</div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-number text-navy">{{ data.totalActiveModules }}</div>
+              <div class="metric-label">Módulos activos</div>
+              <div class="metric-sub">Catálogo actual</div>
+            </div>
           </div>
 
-          <div class="metric-card">
-            <div class="metric-number text-emerald">62%</div>
-            <div class="metric-label">Completaron los 6 módulos</div>
-          </div>
+          <div class="panels-grid">
+            <div class="panel-card panel-left">
+              <h2 class="panel-title">Estudiantes que completaron cada módulo</h2>
 
-          <div class="metric-card">
-            <div class="metric-number text-emerald">+40 pts</div>
-            <div class="metric-label">Mejora promedio (diagnóstica vs. final)</div>
-          </div>
-        </div>
+              @if (data.modules.length === 0) {
+                <div class="panel-empty">Todavía no hay módulos activos.</div>
+              } @else {
+                <div class="modules-progress-list">
+                  @for (mod of data.modules; track mod.moduleId) {
+                    <div class="module-row">
+                      <div class="module-name" [title]="mod.code + ' · ' + mod.title">
+                        {{ mod.code }} · {{ mod.title }}
+                      </div>
 
-        <div class="panels-grid">
-          <div class="panel-card panel-left">
-            <h2 class="panel-title">Estudiantes que completaron cada módulo</h2>
+                      <div class="progress-track">
+                        <div class="progress-fill" [style.width.%]="mod.completionPercent"></div>
+                      </div>
 
-            <div class="modules-progress-list">
-              @for (mod of modules; track mod.id) {
-                <div class="module-row">
-                  <div class="module-name">{{ mod.name }}</div>
+                      <div class="module-percentage">{{ mod.completionPercent }}%</div>
+                      <div class="module-count">{{ mod.completedStudents }}/{{ data.totalStudents }}</div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
 
-                  <div class="progress-track">
-                    <div class="progress-fill" [style.width.%]="mod.percentage"></div>
-                  </div>
+            <div class="panel-card panel-right">
+              <h2 class="panel-title">Últimas actividades</h2>
 
-                  <div class="module-percentage">{{ mod.percentage }}%</div>
+              @if (data.recentActivity.length === 0) {
+                <div class="panel-empty">Aún no hay notas registradas.</div>
+              } @else {
+                <div class="activities-list">
+                  @for (act of data.recentActivity; track $index) {
+                    <div class="activity-item">
+                      <div class="activity-head">
+                        <div class="activity-name">{{ act.studentName }}</div>
+                        @if (act.score !== null) {
+                          <span class="activity-score">{{ act.score }} pts</span>
+                        }
+                      </div>
+                      <div class="activity-detail">
+                        {{ act.sectionTitle }} · {{ act.moduleCode }} — {{ relativeTime(act.occurredAt) }}
+                      </div>
+                    </div>
+                  }
                 </div>
               }
             </div>
           </div>
-
-          <div class="panel-card panel-right">
-            <h2 class="panel-title">Últimos ingresos</h2>
-
-            <div class="activities-list">
-              @for (act of recentActivities; track act.name) {
-                <div class="activity-item">
-                  <div class="activity-name">{{ act.name }}</div>
-                  <div class="activity-detail">{{ act.activity }}</div>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
+        }
       </div>
     }
 
@@ -280,56 +316,173 @@
       </div>
     }
 
-    <!-- PESTAÑA 3: USUARIOS -->
+    <!-- PESTAÑA 3: ESTUDIANTES -->
     @if (activeTab() === 'usuarios') {
       <div class="content-wrapper">
-        <div class="tab-header">
-          <h1 class="page-title">Lista de Estudiantes y Accesos</h1>
-          <p class="page-subtitle">Usuarios registrados en Supabase PostgreSQL y su estado de avance.</p>
+        <div class="header-row">
+          <div class="tab-header">
+            <h1 class="page-title">Estudiantes</h1>
+            <p class="page-subtitle">Usuarios registrados y su avance real en los módulos.</p>
+          </div>
+
+          <button type="button" class="btn-export" (click)="exportResults()" [disabled]="students().length === 0">
+            <svg class="icon-download" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span>Exportar resultados</span>
+          </button>
         </div>
 
-        <div class="table-container">
-          <table class="students-table">
-            <thead>
-              <tr>
-                <th>Estudiante</th>
-                <th>Correo</th>
-                <th>Rol BD</th>
-                <th>Estado</th>
-                <th class="text-center">Módulos</th>
-                <th class="text-right">Progreso</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (u of students; track u.id) {
+        @if (studentsLoading()) {
+          <div class="state-box">Cargando estudiantes…</div>
+        } @else if (studentsError()) {
+          <div class="error-banner">
+            <span>{{ studentsError() }}</span>
+            <button type="button" class="btn-retry" (click)="loadStudents()">Reintentar</button>
+          </div>
+        } @else if (students().length === 0) {
+          <div class="state-box">
+            <p>Todavía no hay estudiantes registrados.</p>
+            <p class="state-hint">Cuando alguien se registre y verifique su correo aparecerá aquí.</p>
+          </div>
+        } @else {
+          <div class="table-container">
+            <table class="students-table">
+              <thead>
                 <tr>
-                  <td class="font-bold text-dark">{{ u.name }}</td>
-                  <td class="font-mono text-muted">{{ u.email }}</td>
-                  <td>
-                    <span [class]="u.role === 'ADMIN' ? 'role-badge badge-admin' : 'role-badge badge-student'">
-                      {{ u.role }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="status-active">
-                      <span class="status-dot"></span>
-                      {{ u.status }}
-                    </span>
-                  </td>
-                  <td class="text-center font-mono">{{ u.modulesCompleted }} / 6</td>
-                  <td class="text-right font-mono">
-                    <span class="score-diag">{{ u.diagnosticScore }} pts</span>
-                    <span class="score-arrow">→</span>
-                    <span class="score-final">{{ u.finalScore }} pts</span>
-                  </td>
+                  <th>Estudiante</th>
+                  <th>Correo</th>
+                  <th>Estado</th>
+                  <th class="text-center">Módulos</th>
+                  <th>Avance</th>
+                  <th class="text-right">Nota media</th>
+                  <th>Última actividad</th>
+                  <th class="text-right">Detalle</th>
                 </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                @for (u of students(); track u.userId) {
+                  <tr>
+                    <td class="font-bold text-dark">{{ fullName(u) }}</td>
+                    <td class="font-mono text-muted">{{ u.email }}</td>
+                    <td>
+                      <span [class]="userStatusClass(u.status)">
+                        <span class="status-dot"></span>
+                        {{ userStatusLabel(u.status) }}
+                      </span>
+                    </td>
+                    <td class="text-center font-mono">{{ u.modulesCompleted }} / {{ u.modulesTotal }}</td>
+                    <td>
+                      <div class="table-progress">
+                        <div class="table-progress-track">
+                          <div class="table-progress-fill" [style.width.%]="u.progressPercent"></div>
+                        </div>
+                        <span class="table-progress-text">{{ u.progressPercent }}%</span>
+                      </div>
+                    </td>
+                    <td class="text-right font-mono">
+                      <span [class]="u.averageScore !== null ? 'score-final' : 'score-diag'">
+                        {{ formatScore(u.averageScore) }}
+                      </span>
+                    </td>
+                    <td class="text-muted">{{ relativeTime(u.lastActivityAt) }}</td>
+                    <td class="text-right">
+                      <button type="button" class="btn-link" (click)="openStudentDetail(u)">Ver detalle</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
       </div>
     }
 
   </main>
+
+  <!-- =========================================================================
+       MODAL: DETALLE DEL ESTUDIANTE
+       ========================================================================= -->
+  @if (selectedStudent(); as student) {
+    <div class="admin-modal-backdrop" (click)="closeStudentDetail()">
+      <div class="admin-modal" (click)="$event.stopPropagation()">
+
+        <div class="admin-modal-header">
+          <div>
+            <span class="modal-eyebrow">Detalle del estudiante</span>
+            <h3 class="admin-modal-title">{{ student.firstName }} {{ student.lastName }}</h3>
+            <p class="admin-modal-subtitle">{{ student.email }}</p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeStudentDetail()">✕</button>
+        </div>
+
+        <div class="admin-modal-body">
+          <div class="detail-stats">
+            <div class="detail-stat">
+              <span class="detail-stat-value">{{ student.modulesCompleted }}/{{ student.modulesTotal }}</span>
+              <span class="detail-stat-label">Módulos completados</span>
+            </div>
+            <div class="detail-stat">
+              <span class="detail-stat-value">{{ student.progressPercent }}%</span>
+              <span class="detail-stat-label">Avance global</span>
+            </div>
+            <div class="detail-stat">
+              <span class="detail-stat-value">{{ formatScore(student.averageScore) }}</span>
+              <span class="detail-stat-label">Nota media</span>
+            </div>
+          </div>
+
+          @if (studentProgressLoading()) {
+            <div class="state-box">Cargando progreso…</div>
+          } @else if (studentProgressError()) {
+            <div class="error-banner">
+              <span>{{ studentProgressError() }}</span>
+              <button type="button" class="btn-retry" (click)="openStudentDetail(student)">Reintentar</button>
+            </div>
+          } @else if (studentProgress(); as modules) {
+            @if (modules.length === 0) {
+              <div class="state-box">
+                <p>Este estudiante aún no tiene módulos disponibles.</p>
+              </div>
+            } @else {
+              <div class="detail-modules">
+                @for (m of modules; track m.moduleId) {
+                  <div class="detail-module">
+                    <div class="detail-module-top">
+                      <div>
+                        <span class="detail-module-code">{{ m.code }}</span>
+                        <span class="detail-module-title">{{ m.title }}</span>
+                      </div>
+                      <span class="detail-badge" [ngClass]="moduleStatusClass(m.status)">
+                        {{ moduleStatusLabel(m.status) }}
+                      </span>
+                    </div>
+
+                    <div class="detail-module-progress">
+                      <div class="table-progress-track">
+                        <div class="table-progress-fill" [style.width.%]="m.progressPercent"></div>
+                      </div>
+                      <span class="table-progress-text">{{ m.progressPercent }}%</span>
+                      <span class="detail-module-score">
+                        {{ m.score !== null ? m.score + ' pts' : 'Sin nota' }}
+                      </span>
+                    </div>
+
+                    <div class="detail-module-meta">
+                      {{ m.completedSections }}/{{ m.totalSections }} secciones · Nota mínima {{ m.passingScore }} pts
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
+
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closeStudentDetail()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
 
 </div>

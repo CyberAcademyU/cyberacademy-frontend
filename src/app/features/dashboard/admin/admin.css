@@ -256,7 +256,13 @@
 
 @media (min-width: 768px) {
   .metrics-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1100px) {
+  .metrics-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -891,4 +897,310 @@
 
 .btn-toggle-active:hover {
   background-color: #f8fafc;
+}
+/* -------------------------------------------------------------------------
+   RESÚMENES Y DETALLE DE ESTUDIANTES
+   ------------------------------------------------------------------------- */
+
+.metric-sub {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 0.4rem;
+}
+
+.module-count {
+  width: 3.5rem;
+  text-align: right;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+
+.panel-empty {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  padding: 0.75rem 0;
+}
+
+.activity-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.activity-score {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #059669;
+  background-color: #ecfdf5;
+  border-radius: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+
+.status-suspended {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #e11d48;
+  font-weight: 500;
+}
+
+.status-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #b45309;
+  font-weight: 500;
+}
+
+.table-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 7rem;
+}
+
+.table-progress-track {
+  flex: 1;
+  height: 0.4rem;
+  background-color: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.table-progress-fill {
+  height: 100%;
+  background-color: #10b981;
+  border-radius: 9999px;
+  transition: width 0.6s ease;
+}
+
+.table-progress-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #475569;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.btn-link {
+  background: transparent;
+  border: none;
+  color: #0b1b3d;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.35rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.btn-link:hover {
+  color: #10b981;
+}
+
+.btn-export:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Modal de detalle */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.admin-modal {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  width: 100%;
+  max-width: 44rem;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+}
+
+.admin-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modal-eyebrow {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.admin-modal-title {
+  margin: 0.2rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0b1b3d;
+}
+
+.admin-modal-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.modal-close-btn:hover {
+  color: #0f172a;
+}
+
+.admin-modal-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.admin-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.detail-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.detail-stat {
+  background-color: #f8fafc;
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.detail-stat-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0b1b3d;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.detail-stat-label {
+  font-size: 0.68rem;
+  color: #64748b;
+}
+
+.detail-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail-module {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-module-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.detail-module-code {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 0.4rem;
+}
+
+.detail-module-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.detail-module-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.detail-module-progress .table-progress-track {
+  flex: 1;
+}
+
+.detail-module-score {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  font-family: 'JetBrains Mono', monospace;
+  min-width: 4.5rem;
+  text-align: right;
+}
+
+.detail-module-meta {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.detail-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-completed {
+  color: #059669;
+}
+
+.badge-in-progress {
+  color: #b45309;
+}
+
+.badge-failed {
+  color: #e11d48;
+}
+
+.badge-not-started {
+  color: #64748b;
 }
