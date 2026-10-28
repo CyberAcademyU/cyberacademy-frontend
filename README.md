@@ -81,5 +81,5 @@ src/app
 
 ## Flujo de aprendizaje
 
-- **Estudiante:** abre un módulo y avanza en orden por las 3 teorías. Cada teoría tiene contenido y una pregunta de comprensión; al acertar se desbloquea la siguiente. Al completar las 3, se habilita la práctica (cuestionario de un solo intento). El backend corrige, guarda la nota y bloquea todas las sesiones.
-- **Administrador:** en `Módulos → Contenido y preguntas` redacta el texto de cada teoría, su pregunta de comprensión y las preguntas de la práctica (enunciado, opciones y cuál es la correcta). Ya no se registran notas a mano.
+- **Estudiante:** abre un módulo y avanza en orden por las 3 teorías. Cada teoría tiene contenido y una pregunta de comprensión; al acertar se desbloquea la siguiente. Al completar las 3, se habilita la práctica (cuestionario de un solo intento). El backend corrige, guarda la nota y bloquea todas las sesiones. El avance se muestra por sesiones (3 teorías = 75 %, práctica = 100 %) y el estudiante solo ve la **nota final de cada módulo**, no notas por sesión.
+- **Administrador:** en `Módulos → Contenido y preguntas` redacta el texto de cada teoría, su pregunta de comprensión y las preguntas de la práctica (enunciado, opciones y cuál es la correcta). En `Estudiantes` ve la nota final de cada módulo, el total acumulado sobre los módulos activos, la nota media y el avance de cada estudiante. Ya no se registran notas a mano.

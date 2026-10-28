@@ -428,13 +428,28 @@ export class AdminDashboardComponent implements OnInit {
   // =========================================================================
 
   exportResults(): void {
-    const header = ['Nombre', 'Correo', 'Estado', 'Modulos completados', 'Total modulos', 'Nota media', 'Avance', 'Ultima actividad'];
+    const header = [
+      'Nombre',
+      'Correo',
+      'Estado',
+      'Modulos completados',
+      'Total modulos',
+      'Modulos calificados',
+      'Nota total',
+      'Total posible',
+      'Nota media',
+      'Avance',
+      'Ultima actividad'
+    ];
     const rows = this.students().map((student) => [
       `${student.firstName} ${student.lastName}`,
       student.email,
       this.userStatusLabel(student.status),
       String(student.modulesCompleted),
       String(student.modulesTotal),
+      String(student.gradedModules),
+      student.totalScore === null ? '' : String(student.totalScore),
+      String(student.modulesTotal * 100),
       student.averageScore === null ? '' : String(student.averageScore),
       `${student.progressPercent}%`,
       this.formatDate(student.lastActivityAt)
@@ -521,6 +536,11 @@ export class AdminDashboardComponent implements OnInit {
 
   formatScore(value: number | null): string {
     return value === null || value === undefined ? '—' : String(value);
+  }
+
+  formatTotal(student: StudentOverview): string {
+    if (student.totalScore === null) return '—';
+    return `${student.totalScore} / ${student.modulesTotal * 100}`;
   }
 
   relativeTime(iso: string | null): string {

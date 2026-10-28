@@ -9,6 +9,8 @@ export interface StudentOverview {
   status: UserStatus;
   modulesCompleted: number;
   modulesTotal: number;
+  totalScore: number | null;
+  gradedModules: number;
   averageScore: number | null;
   progressPercent: number;
   lastActivityAt: string | null;

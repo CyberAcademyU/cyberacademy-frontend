@@ -144,9 +144,6 @@
                         {{ section.questionCount }} pregunta{{ section.questionCount === 1 ? '' : 's' }} ·
                       }
                       <span [ngClass]="sectionStateClass(section)">{{ sectionStateLabel(section) }}</span>
-                      @if (section.score !== null) {
-                        · {{ section.score }} pts
-                      }
                     </span>
                   </div>
 
@@ -303,7 +300,7 @@
             </div>
             <div class="results-stat-card">
               <span class="stat-number">{{ averageScore() ?? '—' }}</span>
-              <span class="stat-label">Nota media</span>
+              <span class="stat-label">Media de módulos</span>
             </div>
             <div class="results-stat-card">
               <span class="stat-number">{{ overallProgress() }}%</span>
@@ -312,7 +309,7 @@
           </div>
 
           <div class="results-breakdown">
-            <h4 class="breakdown-title">Desglose por módulo</h4>
+            <h4 class="breakdown-title">Nota final por módulo</h4>
 
             @for (summary of summaries(); track summary.moduleId) {
               <div class="breakdown-item">

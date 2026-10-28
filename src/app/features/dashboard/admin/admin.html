@@ -335,6 +335,7 @@
                   <th>Estado</th>
                   <th class="text-center">Módulos</th>
                   <th>Avance</th>
+                  <th class="text-right">Nota total</th>
                   <th class="text-right">Nota media</th>
                   <th>Última actividad</th>
                   <th class="text-right">Detalle</th>
@@ -359,6 +360,14 @@
                         </div>
                         <span class="table-progress-text">{{ u.progressPercent }}%</span>
                       </div>
+                    </td>
+                    <td class="text-right font-mono">
+                      <span [class]="u.totalScore !== null ? 'score-final' : 'score-diag'">
+                        {{ formatTotal(u) }}
+                      </span>
+                      @if (u.totalScore !== null) {
+                        <div class="score-sub">{{ u.gradedModules }} de {{ u.modulesTotal }} con nota</div>
+                      }
                     </td>
                     <td class="text-right font-mono">
                       <span [class]="u.averageScore !== null ? 'score-final' : 'score-diag'">
@@ -405,6 +414,12 @@
             <div class="detail-stat">
               <span class="detail-stat-value">{{ student.progressPercent }}%</span>
               <span class="detail-stat-label">Avance global</span>
+            </div>
+            <div class="detail-stat">
+              <span class="detail-stat-value">{{ formatTotal(student) }}</span>
+              <span class="detail-stat-label">
+                Nota total · {{ student.gradedModules }}/{{ student.modulesTotal }} módulos
+              </span>
             </div>
             <div class="detail-stat">
               <span class="detail-stat-value">{{ formatScore(student.averageScore) }}</span>
