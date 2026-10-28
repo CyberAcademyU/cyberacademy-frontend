@@ -78,3 +78,8 @@ src/app
 3. `POST /auth/login` → devuelve el JWT y los datos del usuario.
 4. El token se guarda en `localStorage` (`ca_access_token`) y se envía como `Bearer` en cada petición.
 5. `authGuard` / `adminGuard` protegen las rutas según el rol.
+
+## Flujo de aprendizaje
+
+- **Estudiante:** abre un módulo y avanza en orden por las 3 teorías. Cada teoría tiene contenido y una pregunta de comprensión; al acertar se desbloquea la siguiente. Al completar las 3, se habilita la práctica (cuestionario de un solo intento). El backend corrige, guarda la nota y bloquea todas las sesiones.
+- **Administrador:** en `Módulos → Contenido y preguntas` redacta el texto de cada teoría, su pregunta de comprensión y las preguntas de la práctica (enunciado, opciones y cuál es la correcta). Ya no se registran notas a mano.

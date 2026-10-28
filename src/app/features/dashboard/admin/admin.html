@@ -178,7 +178,7 @@
           <div class="tab-header">
             <h1 class="page-title">Módulos de capacitación</h1>
             <p class="page-subtitle">
-              Crea módulos y ajusta el peso de sus 3 sesiones de teoría y 1 de práctica.
+              Crea módulos, redacta las 3 teorías y define las preguntas de la práctica.
             </p>
           </div>
 
@@ -234,7 +234,8 @@
             </div>
 
             <p class="form-hint">
-              Al crearlo se generan automáticamente 3 sesiones de teoría (20% cada una) y 1 práctica (40%).
+              Al crearlo se generan automáticamente 3 sesiones de teoría y 1 práctica.
+              Después usa “Contenido y preguntas” para redactarlas.
             </p>
           </div>
         }
@@ -270,37 +271,16 @@
                   </p>
                 </div>
 
-                <div class="weights-block">
-                  <div class="weights-header">
-                    <span>Pesos de las secciones</span>
-                    <span [class.weight-total-bad]="!isWeightTotalValid(m)">
-                      Total: {{ moduleTotal(m) }}%
-                    </span>
+                <div class="content-block">
+                  <div class="content-header">
+                    <span>Contenido y evaluación</span>
+                    <span>{{ m.sections.length }} sesiones</span>
                   </div>
-
-                  @for (s of m.sections; track s.id) {
-                    <div class="weight-row">
-                      <span class="weight-name">
-                        {{ s.type === 'PRACTICE' ? 'Práctica' : 'Teoría ' + s.order }}
-                      </span>
-                      <input
-                        class="weight-input"
-                        type="number"
-                        min="0.01"
-                        max="100"
-                        step="0.01"
-                        [ngModel]="weightFor(m.id, s.id)"
-                        (ngModelChange)="setWeight(m.id, s.id, $event)" />
-                      <span class="weight-suffix">%</span>
-                    </div>
-                  }
-
-                  <button
-                    type="button"
-                    class="btn-save-score full"
-                    [disabled]="savingWeights() === m.id"
-                    (click)="saveWeights(m)">
-                    {{ savingWeights() === m.id ? 'Guardando…' : 'Guardar pesos' }}
+                  <p class="content-hint">
+                    3 teorías con pregunta de comprensión + 1 práctica tipo cuestionario con un solo intento.
+                  </p>
+                  <button type="button" class="btn-save-score full" (click)="openContentEditor(m)">
+                    Editar contenido y preguntas
                   </button>
                 </div>
 
@@ -480,6 +460,167 @@
 
         <div class="admin-modal-footer">
           <button type="button" class="btn-modal-cancel" (click)="closeStudentDetail()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- =========================================================================
+       MODAL: CONTENIDO Y PREGUNTAS DEL MÓDULO
+       ========================================================================= -->
+  @if (editingModule(); as module) {
+    <div class="admin-modal-backdrop" (click)="closeContentEditor()">
+      <div class="admin-modal admin-modal-wide" (click)="$event.stopPropagation()">
+
+        <div class="admin-modal-header">
+          <div>
+            <span class="modal-eyebrow">Contenido del módulo</span>
+            <h3 class="admin-modal-title">{{ module.code }} · {{ module.title }}</h3>
+            <p class="admin-modal-subtitle">
+              Redacta las 3 teorías y define las preguntas de la práctica.
+            </p>
+          </div>
+          <button type="button" class="modal-close-btn" (click)="closeContentEditor()">✕</button>
+        </div>
+
+        <div class="admin-modal-body">
+          @if (editorMessage()) {
+            <div class="admin-message">{{ editorMessage() }}</div>
+          }
+          @if (editorError()) {
+            <div class="form-error">{{ editorError() }}</div>
+          }
+
+          @if (editorLoading()) {
+            <div class="state-box">Cargando contenido…</div>
+          } @else {
+            @for (draft of editorSections(); track draft.sectionId) {
+              <div class="editor-section">
+                <div class="editor-section-header">
+                  <span class="editor-section-badge" [class.practice]="draft.type === 'PRACTICE'">
+                    {{ draft.type === 'PRACTICE' ? 'Práctica' : 'Teoría ' + draft.order }}
+                  </span>
+                  <h4 class="editor-section-title">
+                    {{ draft.type === 'PRACTICE' ? 'Cuestionario final' : 'Sesión de teoría' }}
+                  </h4>
+                  <span class="editor-section-meta">
+                    {{ draft.questions.length }} pregunta{{ draft.questions.length === 1 ? '' : 's' }}
+                  </span>
+                </div>
+
+                <label class="form-field">
+                  <span>Título de la sesión</span>
+                  <input
+                    type="text"
+                    maxlength="150"
+                    [ngModel]="draft.title"
+                    (ngModelChange)="setEditorTitle(draft.sectionId, $event)" />
+                </label>
+
+                <label class="form-field">
+                  <span>
+                    {{ draft.type === 'PRACTICE' ? 'Instrucciones de la práctica' : 'Contenido de la teoría' }}
+                  </span>
+                  <textarea
+                    rows="7"
+                    maxlength="20000"
+                    placeholder="Escribe aquí el material que el estudiante debe leer…"
+                    [ngModel]="draft.content"
+                    (ngModelChange)="setEditorContent(draft.sectionId, $event)"></textarea>
+                </label>
+
+                <div class="editor-questions">
+                  <div class="editor-questions-header">
+                    <span>
+                      {{ draft.type === 'THEORY' ? 'Pregunta de comprensión' : 'Preguntas del cuestionario' }}
+                    </span>
+                    @if (draft.type === 'PRACTICE') {
+                      <button type="button" class="btn-link" (click)="addQuestion(draft.sectionId)">
+                        + Añadir pregunta
+                      </button>
+                    }
+                  </div>
+
+                  @for (question of draft.questions; track $index; let qi = $index) {
+                    <div class="editor-question">
+                      <div class="editor-question-top">
+                        <span class="editor-question-number">Pregunta {{ qi + 1 }}</span>
+                        @if (draft.type === 'PRACTICE' && draft.questions.length > 1) {
+                          <button
+                            type="button"
+                            class="btn-link danger"
+                            (click)="removeQuestion(draft.sectionId, qi)">
+                            Eliminar pregunta
+                          </button>
+                        }
+                      </div>
+
+                      <label class="form-field">
+                        <span>Enunciado</span>
+                        <input
+                          type="text"
+                          maxlength="2000"
+                          placeholder="¿Cuál de estos correos es malicioso?"
+                          [ngModel]="question.prompt"
+                          (ngModelChange)="setQuestionPrompt(draft.sectionId, qi, $event)" />
+                      </label>
+
+                      <div class="editor-options">
+                        @for (option of question.options; track $index; let oi = $index) {
+                          <div class="editor-option">
+                            <input
+                              type="radio"
+                              [name]="'correct-' + draft.sectionId + '-' + qi"
+                              [checked]="option.correct"
+                              (change)="setCorrectOption(draft.sectionId, qi, oi)" />
+                            <input
+                              class="option-text"
+                              type="text"
+                              maxlength="500"
+                              [placeholder]="'Opción ' + (oi + 1)"
+                              [ngModel]="option.text"
+                              (ngModelChange)="setOptionText(draft.sectionId, qi, oi, $event)" />
+                            @if (question.options.length > 2) {
+                              <button
+                                type="button"
+                                class="btn-link danger"
+                                (click)="removeOption(draft.sectionId, qi, oi)">
+                                ✕
+                              </button>
+                            }
+                          </div>
+                        }
+
+                        @if (question.options.length < 6) {
+                          <button type="button" class="btn-link" (click)="addOption(draft.sectionId, qi)">
+                            + Añadir opción
+                          </button>
+                        }
+                      </div>
+
+                      <p class="editor-hint">
+                        Marca con el círculo la opción correcta. Debe haber exactamente una.
+                      </p>
+                    </div>
+                  }
+                </div>
+
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    class="btn-save-score"
+                    [disabled]="savingSectionId() === draft.sectionId"
+                    (click)="saveSection(draft)">
+                    {{ savingSectionId() === draft.sectionId ? 'Guardando…' : 'Guardar sesión' }}
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-modal-cancel" (click)="closeContentEditor()">Cerrar</button>
         </div>
       </div>
     </div>

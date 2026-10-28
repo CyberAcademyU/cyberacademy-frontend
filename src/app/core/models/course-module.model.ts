@@ -47,6 +47,9 @@ export interface SectionProgress {
   score: number | null;
   attempts: number;
   completedAt: string | null;
+  accessible: boolean;
+  locked: boolean;
+  questionCount: number;
 }
 
 export interface ModuleProgress {
@@ -70,21 +73,89 @@ export interface UpdateModuleRequest {
   active?: boolean;
 }
 
-export interface UpdateSectionRequest {
-  title?: string;
-  weightPercent?: number;
+// --- Contenido y cuestionarios ---
+
+export interface QuizOption {
+  id: string;
+  order: number;
+  text: string;
 }
 
-export interface SectionWeight {
+export interface QuizQuestion {
+  id: string;
+  order: number;
+  prompt: string;
+  options: QuizOption[];
+}
+
+export interface SectionContent {
   sectionId: string;
-  weightPercent: number;
+  type: SectionType;
+  order: number;
+  title: string;
+  content: string | null;
+  status: ProgressStatus;
+  accessible: boolean;
+  questions: QuizQuestion[];
 }
 
-export interface UpdateWeightsRequest {
-  weights: SectionWeight[];
+export interface CheckAnswerRequest {
+  questionId: string;
+  optionId: string;
 }
 
-export interface RecordScoreRequest {
-  score: number;
-  completed?: boolean;
+export interface CheckAnswerResponse {
+  correct: boolean;
+  sectionCompleted: boolean;
+  message: string;
+}
+
+export interface PracticeAnswer {
+  questionId: string;
+  optionId: string;
+}
+
+export interface SubmitPracticeRequest {
+  answers: PracticeAnswer[];
+}
+
+// --- Editor del administrador ---
+
+export interface AdminOption {
+  id: string;
+  order: number;
+  text: string;
+  correct: boolean;
+}
+
+export interface AdminQuestion {
+  id: string;
+  order: number;
+  prompt: string;
+  options: AdminOption[];
+}
+
+export interface AdminSectionContent {
+  sectionId: string;
+  type: SectionType;
+  order: number;
+  title: string;
+  content: string | null;
+  questions: AdminQuestion[];
+}
+
+export interface SaveOptionRequest {
+  text: string;
+  correct: boolean;
+}
+
+export interface SaveQuestionRequest {
+  prompt: string;
+  options: SaveOptionRequest[];
+}
+
+export interface SaveSectionContentRequest {
+  title: string;
+  content: string;
+  questions: SaveQuestionRequest[];
 }

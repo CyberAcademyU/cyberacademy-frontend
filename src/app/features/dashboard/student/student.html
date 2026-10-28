@@ -79,7 +79,7 @@
     </div>
   </main>
 
-  <!-- Modal: detalle del módulo + registro de notas -->
+  <!-- Modal: recorrido del módulo -->
   @if (loadingDetail() || selectedProgress()) {
     <div class="modal-backdrop" (click)="closeModule()">
       <div class="modal-container" (click)="$event.stopPropagation()">
@@ -121,53 +121,154 @@
               </div>
             </div>
 
-            @if (modalMessage()) {
-              <div class="modal-message">{{ modalMessage() }}</div>
+            @if (action(); as message) {
+              <div class="modal-message" [class.message-error]="message.type === 'error'">
+                {{ message.text }}
+              </div>
             }
 
             <div class="sections-list">
-              <h4 class="objectives-title">Sesiones del módulo</h4>
+              <h4 class="objectives-title">Ruta de aprendizaje</h4>
 
               @for (section of progress.sections; track section.sectionId) {
-                <div class="section-row">
+                <div
+                  class="section-row"
+                  [class.section-current]="currentContent()?.sectionId === section.sectionId">
                   <div class="section-info">
                     <span class="section-type" [class.practice]="section.type === 'PRACTICE'">
                       {{ sectionLabel(section) }}
                     </span>
                     <span class="section-title">{{ section.title }}</span>
                     <span class="section-meta">
-                      Peso {{ section.weightPercent }}% ·
-                      <span [ngClass]="statusClass(section.status)">{{ statusLabel(section.status) }}</span>
+                      @if (section.questionCount > 0) {
+                        {{ section.questionCount }} pregunta{{ section.questionCount === 1 ? '' : 's' }} ·
+                      }
+                      <span [ngClass]="sectionStateClass(section)">{{ sectionStateLabel(section) }}</span>
                       @if (section.score !== null) {
                         · {{ section.score }} pts
-                      }
-                      @if (section.attempts > 0) {
-                        · {{ section.attempts }} intento(s)
                       }
                     </span>
                   </div>
 
-                  <div class="score-form">
-                    <input
-                      class="score-input"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      placeholder="0-100"
-                      [ngModel]="scores()[section.sectionId]"
-                      (ngModelChange)="setDraft(section.sectionId, $event)" />
-                    <button
-                      type="button"
-                      class="btn-save-score"
-                      [disabled]="savingSectionId() === section.sectionId"
-                      (click)="saveScore(section)">
-                      {{ savingSectionId() === section.sectionId ? '…' : 'Guardar' }}
-                    </button>
-                  </div>
+                  <span class="section-state-icon" [ngClass]="sectionStateClass(section)">
+                    @if (section.status === 'COMPLETED') {
+                      ✓
+                    } @else if (!section.accessible) {
+                      🔒
+                    } @else {
+                      →
+                    }
+                  </span>
                 </div>
               }
             </div>
+
+            @if (loadingSection()) {
+              <div class="state-box">Cargando la sesión…</div>
+            } @else if (currentContent(); as content) {
+              <div class="lesson-box">
+                <div class="lesson-header">
+                  <span class="lesson-badge" [class.practice]="content.type === 'PRACTICE'">
+                    {{ content.type === 'PRACTICE' ? 'Práctica' : 'Teoría ' + content.order }}
+                  </span>
+                  <h4 class="lesson-title">{{ content.title }}</h4>
+                </div>
+
+                @if (content.content) {
+                  <div class="lesson-content">{{ content.content }}</div>
+                }
+
+                @if (content.type === 'THEORY') {
+                  @if (content.questions[0]; as question) {
+                    <div class="quiz-box">
+                      <p class="quiz-eyebrow">Pregunta de comprensión</p>
+                      <p class="quiz-prompt">{{ question.prompt }}</p>
+
+                      @for (option of question.options; track option.id) {
+                        <label class="quiz-option" [class.selected]="theorySelection() === option.id">
+                          <input
+                            type="radio"
+                            [name]="'theory-' + question.id"
+                            [checked]="theorySelection() === option.id"
+                            (change)="selectTheoryOption(option.id)" />
+                          <span>{{ option.text }}</span>
+                        </label>
+                      }
+
+                      <button
+                        type="button"
+                        class="btn-save-score full"
+                        [disabled]="!theorySelection() || checking()"
+                        (click)="checkTheory()">
+                        {{ checking() ? 'Comprobando…' : 'Comprobar respuesta' }}
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="state-box">
+                      El administrador todavía no configuró la pregunta de esta teoría.
+                    </div>
+                  }
+                } @else {
+                  <div class="practice-summary">
+                    <span>{{ answeredCount() }}/{{ content.questions.length }} respondidas</span>
+                    <span class="practice-warning">Un solo intento</span>
+                  </div>
+
+                  @if (content.questions.length === 0) {
+                    <div class="state-box">
+                      El administrador todavía no configuró las preguntas de la práctica.
+                    </div>
+                  } @else {
+                    @for (question of content.questions; track question.id; let qi = $index) {
+                      <div class="quiz-box">
+                        <p class="quiz-prompt">{{ qi + 1 }}. {{ question.prompt }}</p>
+
+                        @for (option of question.options; track option.id) {
+                          <label
+                            class="quiz-option"
+                            [class.selected]="practiceAnswers()[question.id] === option.id">
+                            <input
+                              type="radio"
+                              [name]="'practice-' + question.id"
+                              [checked]="practiceAnswers()[question.id] === option.id"
+                              (change)="selectPracticeOption(question.id, option.id)" />
+                            <span>{{ option.text }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+
+                    <button
+                      type="button"
+                      class="btn-save-score full"
+                      [disabled]="submittingPractice() || answeredCount() < content.questions.length"
+                      (click)="submitPractice()">
+                      {{ submittingPractice() ? 'Enviando…' : 'Enviar práctica' }}
+                    </button>
+
+                    <p class="practice-disclaimer">
+                      Al enviarla, la práctica se corrige automáticamente y todas las sesiones quedan bloqueadas.
+                    </p>
+                  }
+                }
+              </div>
+            } @else if (moduleFinished(progress)) {
+              <div class="final-box">
+                <h4 class="final-title">Módulo finalizado</h4>
+                <p class="final-score">
+                  Nota final: <strong>{{ progress.summary.score ?? '—' }} pts</strong>
+                  · Mínimo para aprobar: {{ progress.summary.passingScore }} pts
+                </p>
+                <p class="final-status" [ngClass]="progress.summary.passed ? 'badge-completed' : 'badge-failed'">
+                  {{ progress.summary.passed ? 'Aprobado' : 'No aprobado' }}
+                </p>
+                <p class="state-hint">Las sesiones quedaron bloqueadas.</p>
+              </div>
+            } @else {
+              <div class="state-box">
+                Esta sesión todavía no está configurada. El administrador debe añadir su contenido y preguntas.
+              </div>
+            }
           </div>
 
           <div class="modal-footer">

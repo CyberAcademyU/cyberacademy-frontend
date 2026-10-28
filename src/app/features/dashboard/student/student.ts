@@ -1,6 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { ModulesService } from '../../../core/services/modules';
@@ -8,13 +7,19 @@ import {
   ModuleProgress,
   ModuleSummary,
   ProgressStatus,
+  SectionContent,
   SectionProgress
 } from '../../../core/models/course-module.model';
+
+interface ActionMessage {
+  text: string;
+  type: 'success' | 'error';
+}
 
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
@@ -34,9 +39,19 @@ export class StudentDashboardComponent implements OnInit {
   // Detalle del módulo seleccionado
   selectedProgress = signal<ModuleProgress | null>(null);
   loadingDetail = signal(false);
-  scores = signal<Record<string, number | null>>({});
-  savingSectionId = signal<string | null>(null);
-  modalMessage = signal<string | null>(null);
+
+  // Sesión desbloqueada actual
+  currentContent = signal<SectionContent | null>(null);
+  loadingSection = signal(false);
+  action = signal<ActionMessage | null>(null);
+
+  // Pregunta de comprensión de la teoría
+  theorySelection = signal<string | null>(null);
+  checking = signal(false);
+
+  // Práctica (un solo intento)
+  practiceAnswers = signal<Record<string, string>>({});
+  submittingPractice = signal(false);
 
   // Resultados
   showResultsModal = signal(false);
@@ -55,6 +70,13 @@ export class StudentDashboardComponent implements OnInit {
     if (!list.length) return 0;
     const total = list.reduce((sum, m) => sum + Number(m.progressPercent), 0);
     return Math.round((total / list.length) * 10) / 10;
+  });
+
+  answeredCount = computed(() => {
+    const content = this.currentContent();
+    if (!content) return 0;
+    const answers = this.practiceAnswers();
+    return content.questions.filter((question) => !!answers[question.id]).length;
   });
 
   ngOnInit(): void {
@@ -80,7 +102,10 @@ export class StudentDashboardComponent implements OnInit {
   openModule(summary: ModuleSummary): void {
     this.loadingDetail.set(true);
     this.selectedProgress.set(null);
-    this.modalMessage.set(null);
+    this.currentContent.set(null);
+    this.action.set(null);
+    this.theorySelection.set(null);
+    this.practiceAnswers.set({});
 
     this.modulesService.getModuleProgress(summary.moduleId).subscribe({
       next: (res) => {
@@ -91,8 +116,8 @@ export class StudentDashboardComponent implements OnInit {
           return;
         }
         this.selectedProgress.set(progress);
-        this.scores.set(this.buildScoreDrafts(progress.sections));
         this.loadingDetail.set(false);
+        this.loadCurrentSection(progress);
       },
       error: (err) => {
         this.loadingDetail.set(false);
@@ -103,55 +128,127 @@ export class StudentDashboardComponent implements OnInit {
 
   closeModule(): void {
     this.selectedProgress.set(null);
+    this.currentContent.set(null);
     this.loadingDetail.set(false);
-    this.modalMessage.set(null);
+    this.loadingSection.set(false);
+    this.action.set(null);
+    this.theorySelection.set(null);
+    this.practiceAnswers.set({});
   }
 
-  setDraft(sectionId: string, value: number | string | null): void {
-    const parsed = value === null || value === '' ? null : Number(value);
-    this.scores.update((drafts) => ({ ...drafts, [sectionId]: parsed }));
+  selectTheoryOption(optionId: string): void {
+    this.theorySelection.set(optionId);
   }
 
-  saveScore(section: SectionProgress): void {
+  checkTheory(): void {
+    const content = this.currentContent();
     const progress = this.selectedProgress();
-    if (!progress) return;
+    const optionId = this.theorySelection();
+    const question = content?.questions[0];
 
-    const score = this.scores()[section.sectionId];
-    if (score === null || score === undefined || Number.isNaN(score)) {
-      this.modalMessage.set('Ingresa una nota entre 0 y 100.');
-      return;
-    }
-    if (score < 0 || score > 100) {
-      this.modalMessage.set('La nota debe estar entre 0 y 100.');
+    if (!content || !progress || !question) return;
+    if (!optionId) {
+      this.action.set({ text: 'Selecciona una opción para comprobar tu respuesta.', type: 'error' });
       return;
     }
 
-    this.savingSectionId.set(section.sectionId);
-    this.modalMessage.set(null);
+    this.checking.set(true);
+    this.action.set(null);
 
     this.modulesService
-      .recordScore(progress.summary.moduleId, section.sectionId, { score, completed: true })
+      .checkAnswer(progress.summary.moduleId, content.sectionId, {
+        questionId: question.id,
+        optionId
+      })
       .subscribe({
         next: (res) => {
-          const updated = res.data;
-          if (!updated) {
-            this.savingSectionId.set(null);
-            this.modalMessage.set('No se recibió la respuesta del servidor.');
+          this.checking.set(false);
+          const result = res.data;
+          if (!result) {
+            this.action.set({ text: 'No se recibió la respuesta del servidor.', type: 'error' });
             return;
           }
-          this.selectedProgress.set(updated);
-          this.scores.set(this.buildScoreDrafts(updated.sections));
-          this.summaries.update((list) =>
-            list.map((item) => (item.moduleId === updated.summary.moduleId ? updated.summary : item))
-          );
-          this.savingSectionId.set(null);
-          this.modalMessage.set('Nota guardada. El estado del módulo se actualizó automáticamente.');
+
+          if (result.correct) {
+            this.action.set({ text: result.message, type: 'success' });
+            this.refreshAfterAction(progress.summary.moduleId);
+          } else {
+            this.action.set({ text: result.message, type: 'error' });
+            this.theorySelection.set(null);
+          }
         },
         error: (err) => {
-          this.savingSectionId.set(null);
-          this.modalMessage.set(this.readError(err, 'No se pudo guardar la nota.'));
+          this.checking.set(false);
+          this.action.set({
+            text: this.readError(err, 'No se pudo comprobar la respuesta.'),
+            type: 'error'
+          });
         }
       });
+  }
+
+  selectPracticeOption(questionId: string, optionId: string): void {
+    this.practiceAnswers.update((answers) => ({ ...answers, [questionId]: optionId }));
+  }
+
+  submitPractice(): void {
+    const content = this.currentContent();
+    const progress = this.selectedProgress();
+    if (!content || !progress) return;
+
+    if (this.answeredCount() < content.questions.length) {
+      this.action.set({
+        text: 'Debes responder todas las preguntas antes de enviar la práctica.',
+        type: 'error'
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      '¿Enviar la práctica? Solo tienes un intento y después no podrás volver a las sesiones anteriores.'
+    );
+    if (!confirmed) return;
+
+    const answers = content.questions.map((question) => ({
+      questionId: question.id,
+      optionId: this.practiceAnswers()[question.id]
+    }));
+
+    this.submittingPractice.set(true);
+    this.action.set(null);
+
+    this.modulesService.submitPractice(progress.summary.moduleId, { answers }).subscribe({
+      next: (res) => {
+        this.submittingPractice.set(false);
+        const updated = res.data;
+        if (!updated) {
+          this.action.set({ text: 'No se recibió la nota de la práctica.', type: 'error' });
+          return;
+        }
+
+        this.selectedProgress.set(updated);
+        this.currentContent.set(null);
+        this.theorySelection.set(null);
+        this.practiceAnswers.set({});
+        this.summaries.update((list) =>
+          list.map((item) => (item.moduleId === updated.summary.moduleId ? updated.summary : item))
+        );
+
+        this.action.set({
+          text: updated.summary.passed
+            ? `Práctica enviada. Nota: ${updated.summary.score} pts. ¡Aprobaste el módulo!`
+            : `Práctica enviada. Nota: ${updated.summary.score} pts. No alcanzaste la nota mínima de ${updated.summary.passingScore} pts.`,
+          type: updated.summary.passed ? 'success' : 'error'
+        });
+      },
+      error: (err) => {
+        this.submittingPractice.set(false);
+        this.action.set({
+          text: this.readError(err, 'No se pudo enviar la práctica.'),
+          type: 'error'
+        });
+      }
+    });
   }
 
   openResults(): void {
@@ -210,12 +307,67 @@ export class StudentDashboardComponent implements OnInit {
     return section.type === 'PRACTICE' ? 'Práctica' : `Teoría ${section.order}`;
   }
 
-  private buildScoreDrafts(sections: SectionProgress[]): Record<string, number | null> {
-    const drafts: Record<string, number | null> = {};
-    for (const section of sections) {
-      drafts[section.sectionId] = section.score;
+  sectionStateLabel(section: SectionProgress): string {
+    if (section.status === 'COMPLETED') return 'Completada';
+    if (section.accessible) return 'Disponible ahora';
+    return 'Bloqueada';
+  }
+
+  sectionStateClass(section: SectionProgress): string {
+    if (section.status === 'COMPLETED') return 'badge-completed';
+    if (section.accessible) return 'badge-in-progress';
+    return 'badge-not-started';
+  }
+
+  moduleFinished(progress: ModuleProgress): boolean {
+    return progress.summary.status === 'COMPLETED' || progress.summary.status === 'FAILED';
+  }
+
+  private loadCurrentSection(progress: ModuleProgress): void {
+    const current = progress.sections.find((section) => section.accessible);
+    this.theorySelection.set(null);
+    this.practiceAnswers.set({});
+
+    if (!current) {
+      this.currentContent.set(null);
+      return;
     }
-    return drafts;
+
+    this.loadingSection.set(true);
+    this.modulesService.getSection(progress.summary.moduleId, current.sectionId).subscribe({
+      next: (res) => {
+        this.currentContent.set(res.data ?? null);
+        this.loadingSection.set(false);
+      },
+      error: (err) => {
+        this.loadingSection.set(false);
+        this.currentContent.set(null);
+        this.action.set({
+          text: this.readError(err, 'No se pudo cargar la sesión.'),
+          type: 'error'
+        });
+      }
+    });
+  }
+
+  private refreshAfterAction(moduleId: string): void {
+    this.modulesService.getModuleProgress(moduleId).subscribe({
+      next: (res) => {
+        const progress = res.data;
+        if (!progress) return;
+        this.selectedProgress.set(progress);
+        this.summaries.update((list) =>
+          list.map((item) => (item.moduleId === progress.summary.moduleId ? progress.summary : item))
+        );
+        this.loadCurrentSection(progress);
+      },
+      error: (err) => {
+        this.action.set({
+          text: this.readError(err, 'No se pudo actualizar el progreso.'),
+          type: 'error'
+        });
+      }
+    });
   }
 
   private readError(err: unknown, fallback: string): string {

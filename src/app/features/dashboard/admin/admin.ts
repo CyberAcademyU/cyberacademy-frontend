@@ -5,9 +5,34 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { ModulesService } from '../../../core/services/modules';
 import { AdminDashboardService } from '../../../core/services/admin-dashboard';
-import { CourseModuleResponse, ModuleSummary, ProgressStatus } from '../../../core/models/course-module.model';
+import {
+  AdminSectionContent,
+  CourseModuleResponse,
+  ModuleSummary,
+  ProgressStatus,
+  SectionType
+} from '../../../core/models/course-module.model';
 import { AdminOverview, StudentOverview } from '../../../core/models/admin-dashboard.model';
 import { UserStatus } from '../../../core/models/user.model';
+
+interface OptionDraft {
+  text: string;
+  correct: boolean;
+}
+
+interface QuestionDraft {
+  prompt: string;
+  options: OptionDraft[];
+}
+
+interface SectionDraft {
+  sectionId: string;
+  type: SectionType;
+  order: number;
+  title: string;
+  content: string;
+  questions: QuestionDraft[];
+}
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -53,8 +78,13 @@ export class AdminDashboardComponent implements OnInit {
   createError = signal<string | null>(null);
   newModule = { code: '', title: '', description: '', orderIndex: 1, passingScore: 70 };
 
-  weightDrafts = signal<Record<string, Record<string, number>>>({});
-  savingWeights = signal<string | null>(null);
+  // --- Editor de contenido y preguntas ---
+  editingModule = signal<CourseModuleResponse | null>(null);
+  editorSections = signal<SectionDraft[]>([]);
+  editorLoading = signal(false);
+  editorError = signal<string | null>(null);
+  editorMessage = signal<string | null>(null);
+  savingSectionId = signal<string | null>(null);
 
   completionRate = computed(() => {
     const data = this.overview();
@@ -153,9 +183,7 @@ export class AdminDashboardComponent implements OnInit {
 
     this.modulesService.getModules(true).subscribe({
       next: (res) => {
-        const list = res.data ?? [];
-        this.realModules.set(list);
-        this.weightDrafts.set(this.buildWeightDrafts(list));
+        this.realModules.set(res.data ?? []);
         this.modulesLoading.set(false);
       },
       error: (err) => {
@@ -203,67 +231,15 @@ export class AdminDashboardComponent implements OnInit {
           this.newModule = { code: '', title: '', description: '', orderIndex: 1, passingScore: 70 };
           this.loadModules();
           this.loadOverview();
-          this.modulesMessage.set(`Módulo ${res.data?.code ?? code} creado con sus 4 secciones.`);
+          this.modulesMessage.set(
+            `Módulo ${res.data?.code ?? code} creado. Ahora redacta sus teorías y preguntas con “Contenido y preguntas”.`
+          );
         },
         error: (err) => {
           this.creating.set(false);
           this.createError.set(this.readError(err, 'No se pudo crear el módulo.'));
         }
       });
-  }
-
-  weightFor(moduleId: string, sectionId: string): number {
-    return this.weightDrafts()[moduleId]?.[sectionId] ?? 0;
-  }
-
-  setWeight(moduleId: string, sectionId: string, value: number | string): void {
-    const weight = Number(value);
-    this.weightDrafts.update((drafts) => ({
-      ...drafts,
-      [moduleId]: { ...(drafts[moduleId] ?? {}), [sectionId]: Number.isNaN(weight) ? 0 : weight }
-    }));
-  }
-
-  moduleTotal(module: CourseModuleResponse): number {
-    const drafts = this.weightDrafts()[module.id] ?? {};
-    const total = module.sections.reduce(
-      (sum, section) => sum + Number(drafts[section.id] ?? section.weightPercent),
-      0
-    );
-    return Math.round(total * 100) / 100;
-  }
-
-  isWeightTotalValid(module: CourseModuleResponse): boolean {
-    return Math.abs(this.moduleTotal(module) - 100) < 0.001;
-  }
-
-  saveWeights(module: CourseModuleResponse): void {
-    if (!this.isWeightTotalValid(module)) {
-      this.modulesMessage.set(`Los pesos de ${module.code} deben sumar 100 (actual: ${this.moduleTotal(module)}%).`);
-      return;
-    }
-
-    const drafts = this.weightDrafts()[module.id] ?? {};
-    const weights = module.sections.map((section) => ({
-      sectionId: section.id,
-      weightPercent: Number(drafts[section.id] ?? section.weightPercent)
-    }));
-
-    this.savingWeights.set(module.id);
-    this.modulesMessage.set(null);
-
-    this.modulesService.updateWeights(module.id, { weights }).subscribe({
-      next: () => {
-        this.savingWeights.set(null);
-        this.loadModules();
-        this.loadOverview();
-        this.modulesMessage.set(`Pesos de ${module.code} actualizados y notas recalculadas.`);
-      },
-      error: (err) => {
-        this.savingWeights.set(null);
-        this.modulesMessage.set(this.readError(err, 'No se pudieron guardar los pesos.'));
-      }
-    });
   }
 
   toggleActive(module: CourseModuleResponse): void {
@@ -276,6 +252,174 @@ export class AdminDashboardComponent implements OnInit {
         );
       },
       error: (err) => this.modulesMessage.set(this.readError(err, 'No se pudo cambiar el estado del módulo.'))
+    });
+  }
+
+  // =========================================================================
+  // Editor de contenido y preguntas
+  // =========================================================================
+
+  openContentEditor(module: CourseModuleResponse): void {
+    this.editingModule.set(module);
+    this.editorSections.set([]);
+    this.editorLoading.set(true);
+    this.editorError.set(null);
+    this.editorMessage.set(null);
+    this.savingSectionId.set(null);
+
+    this.modulesService.getModuleContent(module.id).subscribe({
+      next: (res) => {
+        this.editorSections.set((res.data ?? []).map((section) => this.toDraft(section)));
+        this.editorLoading.set(false);
+      },
+      error: (err) => {
+        this.editorLoading.set(false);
+        this.editorError.set(this.readError(err, 'No se pudo cargar el contenido del módulo.'));
+      }
+    });
+  }
+
+  closeContentEditor(): void {
+    this.editingModule.set(null);
+    this.editorSections.set([]);
+    this.editorError.set(null);
+    this.editorMessage.set(null);
+    this.savingSectionId.set(null);
+  }
+
+  setEditorTitle(sectionId: string, value: string): void {
+    this.updateSection(sectionId, (draft) => ({ ...draft, title: value }));
+  }
+
+  setEditorContent(sectionId: string, value: string): void {
+    this.updateSection(sectionId, (draft) => ({ ...draft, content: value }));
+  }
+
+  setQuestionPrompt(sectionId: string, questionIndex: number, value: string): void {
+    this.updateSection(sectionId, (draft) => ({
+      ...draft,
+      questions: draft.questions.map((question, index) =>
+        index === questionIndex ? { ...question, prompt: value } : question
+      )
+    }));
+  }
+
+  setOptionText(sectionId: string, questionIndex: number, optionIndex: number, value: string): void {
+    this.updateSection(sectionId, (draft) => ({
+      ...draft,
+      questions: draft.questions.map((question, qIndex) =>
+        qIndex === questionIndex
+          ? {
+              ...question,
+              options: question.options.map((option, oIndex) =>
+                oIndex === optionIndex ? { ...option, text: value } : option
+              )
+            }
+          : question
+      )
+    }));
+  }
+
+  setCorrectOption(sectionId: string, questionIndex: number, optionIndex: number): void {
+    this.updateSection(sectionId, (draft) => ({
+      ...draft,
+      questions: draft.questions.map((question, qIndex) =>
+        qIndex === questionIndex
+          ? {
+              ...question,
+              options: question.options.map((option, oIndex) => ({
+                ...option,
+                correct: oIndex === optionIndex
+              }))
+            }
+          : question
+      )
+    }));
+  }
+
+  addQuestion(sectionId: string): void {
+    this.updateSection(sectionId, (draft) => ({
+      ...draft,
+      questions: [...draft.questions, this.emptyQuestion()]
+    }));
+  }
+
+  removeQuestion(sectionId: string, questionIndex: number): void {
+    this.updateSection(sectionId, (draft) => ({
+      ...draft,
+      questions: draft.questions.filter((_, index) => index !== questionIndex)
+    }));
+  }
+
+  addOption(sectionId: string, questionIndex: number): void {
+    this.updateSection(sectionId, (draft) => ({
+      ...draft,
+      questions: draft.questions.map((question, index) =>
+        index === questionIndex
+          ? { ...question, options: [...question.options, { text: '', correct: false }] }
+          : question
+      )
+    }));
+  }
+
+  removeOption(sectionId: string, questionIndex: number, optionIndex: number): void {
+    this.updateSection(sectionId, (draft) => ({
+      ...draft,
+      questions: draft.questions.map((question, index) =>
+        index === questionIndex
+          ? { ...question, options: question.options.filter((_, oIndex) => oIndex !== optionIndex) }
+          : question
+      )
+    }));
+  }
+
+  saveSection(draft: SectionDraft): void {
+    const module = this.editingModule();
+    if (!module) return;
+
+    const validationError = this.validateDraft(draft);
+    if (validationError) {
+      this.editorMessage.set(null);
+      this.editorError.set(validationError);
+      return;
+    }
+
+    const request = {
+      title: draft.title.trim(),
+      content: draft.content.trim(),
+      questions: draft.questions.map((question) => ({
+        prompt: question.prompt.trim(),
+        options: question.options.map((option) => ({
+          text: option.text.trim(),
+          correct: option.correct
+        }))
+      }))
+    };
+
+    this.savingSectionId.set(draft.sectionId);
+    this.editorMessage.set(null);
+    this.editorError.set(null);
+
+    this.modulesService.saveSectionContent(module.id, draft.sectionId, request).subscribe({
+      next: (res) => {
+        this.savingSectionId.set(null);
+        const updated = res.data;
+        if (!updated) {
+          this.editorError.set('No se recibió la respuesta del servidor.');
+          return;
+        }
+        this.editorSections.update((sections) =>
+          sections.map((section) =>
+            section.sectionId === updated.sectionId ? this.toDraft(updated) : section
+          )
+        );
+        this.editorMessage.set(`Sesión “${updated.title}” guardada correctamente.`);
+        this.loadModules();
+      },
+      error: (err) => {
+        this.savingSectionId.set(null);
+        this.editorError.set(this.readError(err, 'No se pudo guardar la sesión.'));
+      }
     });
   }
 
@@ -410,15 +554,77 @@ export class AdminDashboardComponent implements OnInit {
   // Internos
   // =========================================================================
 
-  private buildWeightDrafts(modules: CourseModuleResponse[]): Record<string, Record<string, number>> {
-    const drafts: Record<string, Record<string, number>> = {};
-    for (const module of modules) {
-      drafts[module.id] = {};
-      for (const section of module.sections) {
-        drafts[module.id][section.id] = Number(section.weightPercent);
+  private updateSection(sectionId: string, updater: (draft: SectionDraft) => SectionDraft): void {
+    this.editorSections.update((sections) =>
+      sections.map((section) => (section.sectionId === sectionId ? updater(section) : section))
+    );
+  }
+
+  private toDraft(section: AdminSectionContent): SectionDraft {
+    const questions: QuestionDraft[] = section.questions.length
+      ? section.questions.map((question) => ({
+          prompt: question.prompt,
+          options: question.options.map((option) => ({
+            text: option.text,
+            correct: option.correct
+          }))
+        }))
+      : [this.emptyQuestion()];
+
+    return {
+      sectionId: section.sectionId,
+      type: section.type,
+      order: section.order,
+      title: section.title,
+      content: section.content ?? '',
+      questions
+    };
+  }
+
+  private emptyQuestion(): QuestionDraft {
+    return {
+      prompt: '',
+      options: [
+        { text: '', correct: false },
+        { text: '', correct: false },
+        { text: '', correct: false },
+        { text: '', correct: false }
+      ]
+    };
+  }
+
+  private validateDraft(draft: SectionDraft): string | null {
+    if (!draft.title.trim()) {
+      return 'El título de la sesión es obligatorio.';
+    }
+    if (!draft.content.trim()) {
+      return 'El contenido o las instrucciones de la sesión son obligatorios.';
+    }
+    if (draft.type === 'THEORY' && draft.questions.length !== 1) {
+      return 'Cada teoría debe tener exactamente una pregunta de comprensión.';
+    }
+    if (draft.type === 'PRACTICE' && draft.questions.length === 0) {
+      return 'La práctica debe tener al menos una pregunta.';
+    }
+
+    for (let index = 0; index < draft.questions.length; index++) {
+      const question = draft.questions[index];
+      if (!question.prompt.trim()) {
+        return `La pregunta ${index + 1} necesita un enunciado.`;
+      }
+      if (question.options.length < 2) {
+        return `La pregunta ${index + 1} debe tener al menos dos opciones.`;
+      }
+      if (question.options.some((option) => !option.text.trim())) {
+        return `Completa el texto de todas las opciones de la pregunta ${index + 1}.`;
+      }
+      const correct = question.options.filter((option) => option.correct).length;
+      if (correct !== 1) {
+        return `Marca exactamente una opción correcta en la pregunta ${index + 1}.`;
       }
     }
-    return drafts;
+
+    return null;
   }
 
   private readError(err: unknown, fallback: string): string {
