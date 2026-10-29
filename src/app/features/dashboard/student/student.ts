@@ -1,6 +1,8 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { ModuleStreamService } from '../../../core/services/module-stream';
 import { AuthService } from '../../../core/services/auth';
 import { ModulesService } from '../../../core/services/modules';
 import {
@@ -23,10 +25,12 @@ interface ActionMessage {
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
-export class StudentDashboardComponent implements OnInit {
+export class StudentDashboardComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private modulesService = inject(ModulesService);
   private router = inject(Router);
+  private moduleStream = inject(ModuleStreamService);
+  private streamSubscription?: Subscription;
 
   user = this.authService.currentUserSignal;
   studentName = computed(() => this.user()?.firstName || 'Estudiante');
@@ -80,7 +84,27 @@ export class StudentDashboardComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.streamSubscription = this.moduleStream.connect().subscribe(() => this.syncNewModules());
     this.loadProgress();
+  }
+
+  ngOnDestroy(): void {
+    this.streamSubscription?.unsubscribe();
+  }
+
+  private syncNewModules(): void {
+    this.modulesService.getMyProgress().subscribe({
+      next: res => this.mergeNewModules(res.data ?? []),
+      error: () => { /* El siguiente evento o reconexión permitirá reintentar. */ }
+    });
+  }
+
+  private mergeNewModules(incoming: ModuleSummary[]): void {
+    this.summaries.update(current => {
+      const known = new Set(current.map(item => item.moduleId));
+      return [...current, ...incoming.filter(item => !known.has(item.moduleId))]
+        .sort((a, b) => a.orderIndex - b.orderIndex);
+    });
   }
 
   loadProgress(): void {
@@ -89,7 +113,7 @@ export class StudentDashboardComponent implements OnInit {
 
     this.modulesService.getMyProgress().subscribe({
       next: (res) => {
-        this.summaries.set(res.data ?? []);
+        this.mergeNewModules(res.data ?? []);
         this.loading.set(false);
       },
       error: (err) => {
