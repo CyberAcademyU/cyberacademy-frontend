@@ -14,14 +14,22 @@ import {
 } from '../../../core/models/course-module.model';
 import { AdminOverview, StudentOverview } from '../../../core/models/admin-dashboard.model';
 import { UserStatus } from '../../../core/models/user.model';
+import { LogoComponent } from '../../../shared/ui/logo';
+import { IconComponent } from '../../../shared/ui/icon';
+import { ModuleCoverComponent, ModuleCoverKey } from '../../../shared/ui/module-cover';
+import { CoverPickerComponent } from '../../../shared/ui/cover-picker';
 
 interface OptionDraft {
   text: string;
   correct: boolean;
+  /** Por qué esta opción es correcta o un error (se muestra al estudiante al elegirla). */
+  feedback: string;
 }
 
 interface QuestionDraft {
   prompt: string;
+  /** Qué pasó, por qué es riesgoso y cómo evitarlo (se muestra al resolver la pregunta). */
+  explanation: string;
   options: OptionDraft[];
 }
 
@@ -37,7 +45,8 @@ interface SectionDraft {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LogoComponent, IconComponent, ModuleCoverComponent, CoverPickerComponent],
+  host: { '(document:keydown.escape)': 'onEscape()' },
   templateUrl: './admin.html',
   styleUrl: './admin.css'
 })
@@ -66,6 +75,10 @@ export class AdminDashboardComponent implements OnInit {
   studentProgress = signal<ModuleSummary[] | null>(null);
   studentProgressLoading = signal(false);
   studentProgressError = signal<string | null>(null);
+  /** Módulo cuyo reinicio de intentos espera confirmación, y el que se está procesando. */
+  confirmResetId = signal<string | null>(null);
+  resettingId = signal<string | null>(null);
+  studentProgressMessage = signal<string | null>(null);
 
   // --- Gestión de módulos ---
   realModules = signal<CourseModuleResponse[]>([]);
@@ -76,7 +89,9 @@ export class AdminDashboardComponent implements OnInit {
   showCreateForm = signal(false);
   creating = signal(false);
   createError = signal<string | null>(null);
-  newModule = { code: '', title: '', description: '', orderIndex: 1, passingScore: 70 };
+  newModule: { code: string; title: string; description: string; cover: ModuleCoverKey | ''; orderIndex: number; passingScore: number } =
+    { code: '', title: '', description: '', cover: '', orderIndex: 1, passingScore: 70 };
+  savingCover = signal(false);
 
   // --- Editor de contenido y preguntas ---
   editingModule = signal<CourseModuleResponse | null>(null);
@@ -171,6 +186,56 @@ export class AdminDashboardComponent implements OnInit {
     this.selectedStudent.set(null);
     this.studentProgress.set(null);
     this.studentProgressError.set(null);
+    this.studentProgressMessage.set(null);
+    this.confirmResetId.set(null);
+  }
+
+  /** La práctica admite reanudar intentos si el estudiante la envió y no la aprobó. */
+  canResetAttempts(module: ModuleSummary): boolean {
+    return !module.passed && module.practiceAttempts > 0;
+  }
+
+  /** Primer clic pide confirmación; el segundo reanuda los intentos. */
+  resetAttempts(student: StudentOverview, module: ModuleSummary): void {
+    if (this.confirmResetId() !== module.moduleId) {
+      this.confirmResetId.set(module.moduleId);
+      this.studentProgressMessage.set(null);
+      return;
+    }
+    this.confirmResetId.set(null);
+    this.resettingId.set(module.moduleId);
+    this.modulesService.resetPracticeAttempts(student.userId, module.moduleId).subscribe({
+      next: (res) => {
+        this.resettingId.set(null);
+        this.studentProgress.set(res.data ?? []);
+        this.studentProgressMessage.set(
+          `Intentos de ${module.code} reanudados: ${student.firstName} vuelve a tener ${module.maxPracticeAttempts}.`
+        );
+        this.loadStudents();
+      },
+      error: (err) => {
+        this.resettingId.set(null);
+        this.studentProgressError.set(this.readError(err, 'No se pudieron reanudar los intentos.'));
+      }
+    });
+  }
+
+  /** Cambia la portada al momento (desde el editor de contenido). */
+  changeCover(module: CourseModuleResponse, cover: ModuleCoverKey | ''): void {
+    this.savingCover.set(true);
+    this.modulesService.updateModule(module.id, { cover }).subscribe({
+      next: (res) => {
+        this.savingCover.set(false);
+        const updated = res.data ?? { ...module, cover: cover || null };
+        this.editingModule.set(updated);
+        this.realModules.update((list) => list.map((m) => (m.id === updated.id ? updated : m)));
+        this.editorMessage.set('Portada actualizada.');
+      },
+      error: (err) => {
+        this.savingCover.set(false);
+        this.editorError.set(this.readError(err, 'No se pudo cambiar la portada.'));
+      }
+    });
   }
 
   // =========================================================================
@@ -221,6 +286,7 @@ export class AdminDashboardComponent implements OnInit {
         code,
         title,
         description: this.newModule.description.trim() || undefined,
+        cover: this.newModule.cover || undefined,
         orderIndex: Number(this.newModule.orderIndex) || 1,
         passingScore: Number(this.newModule.passingScore)
       })
@@ -228,7 +294,7 @@ export class AdminDashboardComponent implements OnInit {
         next: (res) => {
           this.creating.set(false);
           this.showCreateForm.set(false);
-          this.newModule = { code: '', title: '', description: '', orderIndex: 1, passingScore: 70 };
+          this.newModule = { code: '', title: '', description: '', cover: '', orderIndex: 1, passingScore: 70 };
           this.loadModules();
           this.loadOverview();
           this.modulesMessage.set(
@@ -248,7 +314,7 @@ export class AdminDashboardComponent implements OnInit {
         this.loadModules();
         this.loadOverview();
         this.modulesMessage.set(
-          `Módulo ${module.code} ${module.active ? 'desactivado' : 'activado'} correctamente.`
+          `Módulo ${module.code} ${module.active ? 'oculto a los estudiantes' : 'publicado'}.`
         );
       },
       error: (err) => this.modulesMessage.set(this.readError(err, 'No se pudo cambiar el estado del módulo.'))
@@ -300,6 +366,31 @@ export class AdminDashboardComponent implements OnInit {
       ...draft,
       questions: draft.questions.map((question, index) =>
         index === questionIndex ? { ...question, prompt: value } : question
+      )
+    }));
+  }
+
+  setQuestionExplanation(sectionId: string, questionIndex: number, value: string): void {
+    this.updateSection(sectionId, (draft) => ({
+      ...draft,
+      questions: draft.questions.map((question, index) =>
+        index === questionIndex ? { ...question, explanation: value } : question
+      )
+    }));
+  }
+
+  setOptionFeedback(sectionId: string, questionIndex: number, optionIndex: number, value: string): void {
+    this.updateSection(sectionId, (draft) => ({
+      ...draft,
+      questions: draft.questions.map((question, qIndex) =>
+        qIndex === questionIndex
+          ? {
+              ...question,
+              options: question.options.map((option, oIndex) =>
+                oIndex === optionIndex ? { ...option, feedback: value } : option
+              )
+            }
+          : question
       )
     }));
   }
@@ -356,7 +447,7 @@ export class AdminDashboardComponent implements OnInit {
       ...draft,
       questions: draft.questions.map((question, index) =>
         index === questionIndex
-          ? { ...question, options: [...question.options, { text: '', correct: false }] }
+          ? { ...question, options: [...question.options, { text: '', correct: false, feedback: '' }] }
           : question
       )
     }));
@@ -389,9 +480,11 @@ export class AdminDashboardComponent implements OnInit {
       content: draft.content.trim(),
       questions: draft.questions.map((question) => ({
         prompt: question.prompt.trim(),
+        explanation: question.explanation.trim() || null,
         options: question.options.map((option) => ({
           text: option.text.trim(),
-          correct: option.correct
+          correct: option.correct,
+          feedback: option.feedback.trim() || null
         }))
       }))
     };
@@ -473,6 +566,11 @@ export class AdminDashboardComponent implements OnInit {
     setTimeout(() => this.exportSuccess.set(false), 3000);
   }
 
+  onEscape(): void {
+    if (this.editingModule()) this.closeContentEditor();
+    else if (this.selectedStudent()) this.closeStudentDetail();
+  }
+
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/auth/login']);
@@ -500,11 +598,11 @@ export class AdminDashboardComponent implements OnInit {
   userStatusClass(status: UserStatus): string {
     switch (status) {
       case 'ACTIVE':
-        return 'status-active';
+        return 'ca-badge ca-badge--secure';
       case 'SUSPENDED':
-        return 'status-suspended';
+        return 'ca-badge ca-badge--threat';
       default:
-        return 'status-pending';
+        return 'ca-badge ca-badge--warn';
     }
   }
 
@@ -524,13 +622,13 @@ export class AdminDashboardComponent implements OnInit {
   moduleStatusClass(status: ProgressStatus): string {
     switch (status) {
       case 'COMPLETED':
-        return 'badge-completed';
+        return 'ca-badge--secure';
       case 'IN_PROGRESS':
-        return 'badge-in-progress';
+        return 'ca-badge--warn';
       case 'FAILED':
-        return 'badge-failed';
+        return 'ca-badge--threat';
       default:
-        return 'badge-not-started';
+        return '';
     }
   }
 
@@ -584,9 +682,11 @@ export class AdminDashboardComponent implements OnInit {
     const questions: QuestionDraft[] = section.questions.length
       ? section.questions.map((question) => ({
           prompt: question.prompt,
+          explanation: question.explanation ?? '',
           options: question.options.map((option) => ({
             text: option.text,
-            correct: option.correct
+            correct: option.correct,
+            feedback: option.feedback ?? ''
           }))
         }))
       : [this.emptyQuestion()];
@@ -604,11 +704,12 @@ export class AdminDashboardComponent implements OnInit {
   private emptyQuestion(): QuestionDraft {
     return {
       prompt: '',
+      explanation: '',
       options: [
-        { text: '', correct: false },
-        { text: '', correct: false },
-        { text: '', correct: false },
-        { text: '', correct: false }
+        { text: '', correct: false, feedback: '' },
+        { text: '', correct: false, feedback: '' },
+        { text: '', correct: false, feedback: '' },
+        { text: '', correct: false, feedback: '' }
       ]
     };
   }

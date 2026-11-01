@@ -2,11 +2,17 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 
 export const routes: Routes = [
-  // Ruta por defecto: redirigir al login
+  // Páginas públicas: portada y catálogo de módulos
   {
     path: '',
-    redirectTo: 'auth/login',
-    pathMatch: 'full'
+    pathMatch: 'full',
+    title: 'CyberAcademy · Aprende ciberseguridad',
+    loadComponent: () => import('./features/landing/intro').then(m => m.IntroComponent)
+  },
+  {
+    path: 'explorar',
+    title: 'Módulos · CyberAcademy',
+    loadComponent: () => import('./features/landing/explore').then(m => m.ExploreComponent)
   },
   // Módulo de Autenticación
   {
@@ -36,15 +42,27 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/student/student').then(m => m.StudentComponent)
       },
       {
+        path: 'leaderboard',
+        canActivate: [authGuard],
+        title: 'Clasificación · CyberAcademy',
+        loadComponent: () => import('./features/leaderboard/leaderboard').then(m => m.LeaderboardComponent)
+      },
+      {
+        path: 'profile',
+        canActivate: [authGuard],
+        title: 'Mi perfil · CyberAcademy',
+        loadComponent: () => import('./features/profile/profile').then(m => m.ProfileComponent)
+      },
+      {
         path: 'admin',
         canActivate: [authGuard],
         loadComponent: () => import('./features/dashboard/admin/admin').then(m => m.AdminDashboardComponent)
       }
     ]
   },
-  // Cualquier otra ruta no encontrada redirige al login
+  // Cualquier otra ruta no encontrada vuelve a la portada
   {
     path: '**',
-    redirectTo: 'auth/login'
+    redirectTo: ''
   }
 ];

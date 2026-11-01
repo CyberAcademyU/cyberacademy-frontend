@@ -1,0 +1,146 @@
+<ca-app-header />
+
+<main class="page">
+  @if (loading() && !profile()) {
+    <div class="ca-skeleton identity-skeleton"></div>
+  } @else if (error() && !profile()) {
+    <div class="ca-alert ca-alert--threat" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" class="ca-btn ca-btn--sm" (click)="load()">Reintentar</button>
+    </div>
+  } @else if (profile(); as p) {
+    <!-- Identidad -->
+    <section class="identity" aria-labelledby="profile-name">
+      <ca-avatar class="identity-avatar" [avatar]="p.avatar" [name]="p.publicName" [size]="112" />
+      <div class="identity-copy">
+        <h1 id="profile-name">{{ p.publicName }}</h1>
+        <p class="identity-meta">
+          <span><ca-icon name="history" [size]="15" /> Desde {{ memberSince() }}</span>
+          @if (p.country) { <span><ca-icon name="pin" [size]="15" /> {{ p.country }}</span> }
+          @if (!p.showInLeaderboard) { <span><ca-icon name="eye-off" [size]="15" /> Oculto en la clasificación</span> }
+        </p>
+        @if (p.bio) {
+          <p class="identity-bio">{{ p.bio }}</p>
+        }
+      </div>
+      <button type="button" class="ca-btn identity-edit" (click)="editing.set(true); notice.set(null)">
+        <ca-icon name="edit" [size]="16" /> Editar perfil
+      </button>
+    </section>
+
+    @if (notice(); as message) {
+      <div class="ca-alert ca-alert--secure" role="status">{{ message }}</div>
+    }
+
+    <!-- Cifras -->
+    <dl class="stats ca-panel">
+      <div class="stat stat--league">
+        <ca-league-emblem [code]="p.league.code" [size]="40" />
+        <div>
+          <dt class="ca-stat-label">Liga</dt>
+          <dd class="ca-stat-value" [style.color]="tierColor(p.league.code)">{{ p.league.name }}</dd>
+        </div>
+      </div>
+      <div class="stat">
+        <dt class="ca-stat-label">XP total</dt>
+        <dd class="ca-stat-value ca-num">{{ p.xp }}</dd>
+      </div>
+      <div class="stat">
+        <dt class="ca-stat-label">Puesto</dt>
+        <dd class="ca-stat-value ca-num">
+          @if (p.rank) { {{ p.rank }}<span class="of">/{{ p.totalRanked }}</span> } @else { — }
+        </dd>
+      </div>
+      <div class="stat">
+        <dt class="ca-stat-label">Racha</dt>
+        <dd class="ca-stat-value ca-num">
+          {{ p.currentStreak }}<span class="of"> {{ p.currentStreak === 1 ? 'día' : 'días' }}</span>
+        </dd>
+      </div>
+      <div class="stat">
+        <dt class="ca-stat-label">Módulos aprobados</dt>
+        <dd class="ca-stat-value ca-num">{{ p.modulesCompleted }}<span class="of">/{{ p.modulesTotal }}</span></dd>
+      </div>
+    </dl>
+
+    <div class="columns">
+      <div class="column">
+        <!-- Perfil completo -->
+        @if (completion() < 100) {
+          <section class="ca-panel card checklist-card" aria-labelledby="checklist-title">
+            <div class="ca-meter checklist-meter" [style.--value]="completion() + '%'"><span></span></div>
+            <h2 id="checklist-title">Tu perfil está al {{ completion() }} %</h2>
+            <ul class="checklist">
+              @for (item of checklist(); track item.label) {
+                <li [class.is-done]="item.done">
+                  <span class="tick" aria-hidden="true">
+                    @if (item.done) { <ca-icon name="check" [size]="14" /> }
+                  </span>
+                  <span>{{ item.label }}</span>
+                  <span class="ca-sr-only">{{ item.done ? '(hecho)' : '(pendiente)' }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        <!-- Insignias -->
+        <section class="ca-panel card" aria-labelledby="badges-title">
+          <div class="card-head">
+            <h2 id="badges-title">Insignias</h2>
+            <span class="ca-num muted">{{ earnedCount() }} de {{ p.badges.length }}</span>
+          </div>
+          <ul class="badges">
+            @for (badge of p.badges; track badge.code) {
+              <li class="badge" [class.is-earned]="badge.earned">
+                <ca-badge-medal [code]="badge.code" [earned]="badge.earned" [size]="52" />
+                <div class="badge-copy">
+                  <strong>{{ badge.name }}</strong>
+                  <span>{{ badge.description }}</span>
+                  <span class="badge-status ca-num">{{ badgeStatus(badge) }}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+      </div>
+
+      <div class="column">
+        <!-- Actividad -->
+        <section class="ca-panel card" aria-labelledby="activity-title">
+          <div class="card-head">
+            <h2 id="activity-title">Actividad del último año</h2>
+            <span class="ca-num muted">{{ activityTotal() }} {{ activityTotal() === 1 ? 'sesión' : 'sesiones' }}</span>
+          </div>
+          <ca-activity-heatmap [days]="p.activity" />
+          <p class="muted streak-note">
+            <ca-icon name="flame" [size]="16" />
+            Tu mejor racha: <span class="ca-num">{{ p.longestStreak }}</span> {{ p.longestStreak === 1 ? 'día' : 'días' }} seguidos.
+          </p>
+        </section>
+
+        <!-- Cuenta -->
+        <section class="ca-panel card" aria-labelledby="account-title">
+          <h2 id="account-title">Cuenta y seguridad</h2>
+          <dl class="account">
+            <div><dt>Correo</dt><dd>{{ p.email }}</dd></div>
+            <div><dt>Nombre completo</dt><dd>{{ p.firstName }} {{ p.lastName }}</dd></div>
+            <div>
+              <dt>Clasificación</dt>
+              <dd>
+                {{ p.showInLeaderboard ? 'Visible con tu alias' : 'Oculto' }}
+                <a routerLink="/dashboard/leaderboard" class="ca-link">Ver clasificación</a>
+              </dd>
+            </div>
+          </dl>
+          <h3 class="subhead"><ca-icon name="key" [size]="16" /> Cambiar contraseña</h3>
+          <app-password-form />
+        </section>
+      </div>
+    </div>
+
+    @if (editing()) {
+      <app-profile-edit-dialog [profile]="p" (saved)="onSaved()" (cancel)="editing.set(false)" />
+    }
+  }
+</main>

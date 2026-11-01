@@ -1,238 +1,137 @@
-<div class="auth-wrapper">
-  <main class="auth-main">
-    <div class="auth-card">
-      
-      <!-- Logo con Escudo Verde -->
-      <div class="card-brand">
-        <div class="green-shield">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
-        </div>
-        <span class="brand-text">
-          <span class="brand-dark">Cyber</span><span class="brand-green">Academy</span>
-        </span>
+<ca-auth-shell>
+
+
+  <!-- Inicio de sesión -->
+  @if (currentMode() === 'login') {
+    <header class="head">
+      <h2>Bienvenido de vuelta</h2>
+      <p>Entra para continuar tus módulos donde los dejaste.</p>
+    </header>
+
+    @if (verifiedSuccess()) {
+      <div class="ca-alert ca-alert--secure" role="status">Correo verificado. Ya puedes iniciar sesión.</div>
+    }
+    @if (loginError()) {
+      <div class="ca-alert ca-alert--threat" role="alert">{{ loginError() }}</div>
+    }
+
+    <form [formGroup]="loginForm" (ngSubmit)="onLoginSubmit()" class="form" novalidate>
+      <div class="ca-field">
+        <label for="login-email">Correo</label>
+        <input id="login-email" class="ca-input" type="email" formControlName="email"
+               autocomplete="email" placeholder="correo@ejemplo.com" />
       </div>
 
-      <!-- Pestañas para cambiar entre Login y Registro -->
-      @if (currentMode() !== 'verify-otp') {
-        <div class="auth-tabs">
-          <button
-            type="button"
-            (click)="setMode('login')"
-            [class.active]="currentMode() === 'login'"
-            class="tab-btn">
-            Iniciar sesión
-          </button>
-          <button
-            type="button"
-            (click)="setMode('register')"
-            [class.active]="currentMode() === 'register'"
-            class="tab-btn">
-            Registrarse
-          </button>
+      <div class="ca-field">
+        <label for="login-password">Contraseña</label>
+        <input id="login-password" class="ca-input" type="password" formControlName="password"
+               autocomplete="current-password" />
+      </div>
+
+      <button type="submit" class="ca-btn ca-btn--primary ca-btn--block" [disabled]="loginForm.invalid || isLoading()">
+        {{ isLoading() ? 'Iniciando sesión…' : 'Iniciar sesión' }}
+      </button>
+    </form>
+
+    <p class="switch">
+      ¿Primera vez aquí?
+      <button type="button" class="ca-link" (click)="setMode('register')">Crea tu cuenta</button>
+    </p>
+  }
+
+  <!-- Registro -->
+  @if (currentMode() === 'register') {
+    <header class="head">
+      <h2>Crea tu cuenta de estudiante</h2>
+      <p>Te enviaremos un código a tu correo para activarla.</p>
+    </header>
+
+    @if (registerError()) {
+      <div class="ca-alert ca-alert--threat" role="alert">{{ registerError() }}</div>
+    }
+
+    <form [formGroup]="registerForm" (ngSubmit)="onRegisterSubmit()" class="form" novalidate>
+      <div class="row">
+        <div class="ca-field">
+          <label for="firstName">Nombres</label>
+          <input id="firstName" class="ca-input" type="text" formControlName="firstName" autocomplete="given-name" />
         </div>
+        <div class="ca-field">
+          <label for="lastName">Apellidos</label>
+          <input id="lastName" class="ca-input" type="text" formControlName="lastName" autocomplete="family-name" />
+        </div>
+      </div>
+
+      <div class="ca-field">
+        <label for="reg-email">Correo</label>
+        <input id="reg-email" class="ca-input" type="email" formControlName="email"
+               autocomplete="email" placeholder="correo@ejemplo.com" />
+      </div>
+
+      <div class="ca-field">
+        <label for="reg-password">Contraseña</label>
+        <input id="reg-password" class="ca-input" type="password" formControlName="password"
+               autocomplete="new-password" aria-describedby="reg-password-hint" />
+        <span id="reg-password-hint" class="ca-field-hint">Mínimo 8 caracteres.</span>
+      </div>
+
+      <div class="ca-field">
+        <label for="confirmPassword">Repite la contraseña</label>
+        <input id="confirmPassword" class="ca-input" type="password" formControlName="confirmPassword"
+               autocomplete="new-password" />
+      </div>
+
+      <button type="submit" class="ca-btn ca-btn--primary ca-btn--block" [disabled]="isLoading()">
+        {{ isLoading() ? 'Enviando código…' : 'Crear cuenta' }}
+      </button>
+    </form>
+
+    <p class="switch">
+      ¿Ya tienes cuenta?
+      <button type="button" class="ca-link" (click)="setMode('login')">Inicia sesión</button>
+    </p>
+  }
+
+  <!-- Verificación del código -->
+  @if (currentMode() === 'verify-otp') {
+    <header class="head">
+      <span class="otp-icon"><ca-icon name="mail" [size]="22" /></span>
+      <h2>Revisa tu correo</h2>
+      <p>Escribe el código de 6 dígitos que enviamos a <strong>{{ pendingEmail() }}</strong>.</p>
+    </header>
+
+    @if (otpError()) {
+      <div class="ca-alert ca-alert--threat" role="alert">{{ otpError() }}</div>
+    }
+
+    <fieldset class="otp" (paste)="onPaste($event)">
+      <legend class="ca-sr-only">Código de verificación</legend>
+      @for (digit of otpDigits; track $index) {
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-box"
+               [attr.autocomplete]="$first ? 'one-time-code' : 'off'"
+               [attr.aria-label]="'Dígito ' + ($index + 1)"
+               [value]="otpDigits[$index]"
+               (input)="onDigitInput($event, $index)"
+               (keydown)="onKeyDown($event, $index)" />
       }
+    </fieldset>
 
-      <!-- ========================================== -->
-      <!-- VISTA 1: INICIO DE SESIÓN                  -->
-      <!-- ========================================== -->
-      @if (currentMode() === 'login') {
-        <div class="card-header">
-          <h1 class="card-title">Identifica el ataque antes de que pueda afectarte.</h1>
-          <p class="card-subtitle">Practica con situaciones reales de riesgo digital en un entorno seguro.</p>
-        </div>
+    <p class="ca-field-hint otp-note">El código caduca en 15 minutos y admite 5 intentos.</p>
 
-        @if (verifiedSuccess()) {
-          <div class="alert-success">
-            ¡Correo verificado con éxito! Ya puedes iniciar sesión.
-          </div>
-        }
+    <button type="button" class="ca-btn ca-btn--primary ca-btn--block"
+            [disabled]="getOtpCode().length !== 6 || isLoading()" (click)="onVerifyOtpSubmit()">
+      {{ isLoading() ? 'Verificando…' : 'Activar cuenta' }}
+    </button>
 
-        @if (loginError()) {
-          <div class="alert-error">
-            {{ loginError() }}
-          </div>
-        }
-
-        <form [formGroup]="loginForm" (ngSubmit)="onLoginSubmit()" class="auth-form">
-          <div class="form-group">
-            <label for="login-email">Correo</label>
-            <input
-              id="login-email"
-              type="email"
-              formControlName="email"
-              placeholder="correo@ejemplo.com"
-              class="form-control"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="login-password">Contraseña</label>
-            <input
-              id="login-password"
-              type="password"
-              formControlName="password"
-              placeholder="••••••••"
-              class="form-control"
-            />
-          </div>
-
-          <button type="submit" [disabled]="loginForm.invalid || isLoading()" class="btn-submit">
-            {{ isLoading() ? 'Iniciando sesión...' : 'Iniciar sesión' }}
-          </button>
-        </form>
-
-        <div class="card-footer">
-          <button type="button" (click)="setMode('register')" class="link-switch">
-            ¿No tienes cuenta? Regístrate
-          </button>
-        </div>
+    <div class="otp-foot">
+      <button type="button" class="ca-btn ca-btn--quiet ca-btn--sm" (click)="setMode('register')">
+        <ca-icon name="arrow-left" [size]="16" /> Cambiar correo
+      </button>
+      @if (cooldownSeconds() > 0) {
+        <span class="ca-field-hint ca-num" aria-live="polite">Reenviar en {{ cooldownSeconds() }} s</span>
+      } @else {
+        <button type="button" class="ca-link" (click)="resendCode()">Reenviar código</button>
       }
-
-      <!-- ========================================== -->
-      <!-- VISTA 2: REGISTRO DE ESTUDIANTE           -->
-      <!-- ========================================== -->
-      @if (currentMode() === 'register') {
-        <div class="card-header">
-          <h1 class="card-title">Crea tu cuenta de estudiante</h1>
-          <p class="card-subtitle">Ingresa tus datos para validar tu correo y activar tu entrenamiento.</p>
-        </div>
-
-        @if (registerError()) {
-          <div class="alert-error">
-            {{ registerError() }}
-          </div>
-        }
-
-        <form [formGroup]="registerForm" (ngSubmit)="onRegisterSubmit()" class="auth-form">
-          <div class="form-row">
-            <div class="form-group col">
-              <label for="firstName">Nombres</label>
-              <input
-                id="firstName"
-                type="text"
-                formControlName="firstName"
-                placeholder="Carlos"
-                class="form-control"
-              />
-            </div>
-            <div class="form-group col">
-              <label for="lastName">Apellidos</label>
-              <input
-                id="lastName"
-                type="text"
-                formControlName="lastName"
-                placeholder="Mendoza"
-                class="form-control"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="reg-email">Correo Electrónico</label>
-            <input
-              id="reg-email"
-              type="email"
-              formControlName="email"
-              placeholder="correo@ejemplo.com"
-              class="form-control"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="reg-password">Contraseña</label>
-            <input
-              id="reg-password"
-              type="password"
-              formControlName="password"
-              placeholder="Mínimo 8 caracteres"
-              class="form-control"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="confirmPassword">Repite Contraseña</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              formControlName="confirmPassword"
-              placeholder="Vuelve a escribir la contraseña"
-              class="form-control"
-            />
-          </div>
-
-          <button type="submit" [disabled]="isLoading()" class="btn-submit">
-            {{ isLoading() ? 'Generando código de verificación...' : 'Registrarme como estudiante' }}
-          </button>
-        </form>
-
-        <div class="card-footer">
-          <button type="button" (click)="setMode('login')" class="link-switch">
-            ¿Ya tienes una cuenta? Iniciar sesión
-          </button>
-        </div>
-      }
-
-      <!-- ========================================== -->
-      <!-- VISTA 3: VALIDACIÓN DEL CÓDIGO POR CORREO -->
-      <!-- ========================================== -->
-      @if (currentMode() === 'verify-otp') {
-        <div class="text-center">
-          <h1 class="card-title">Verifica tu correo</h1>
-          <p class="card-subtitle">
-            Ingresa el código de 6 dígitos que enviamos a:<br>
-            <strong class="email-highlight">{{ pendingEmail() }}</strong>
-          </p>
-
-          @if (otpError()) {
-            <div class="alert-error">
-              {{ otpError() }}
-            </div>
-          }
-
-          <div class="otp-inputs">
-            @for (digit of otpDigits; track $index) {
-              <input
-                type="text"
-                inputmode="numeric"
-                maxlength="1"
-                [value]="otpDigits[$index]"
-                (input)="onDigitInput($event, $index)"
-                (keydown)="onKeyDown($event, $index)"
-                class="otp-box"
-              />
-            }
-          </div>
-
-          <p class="security-note">
-            Expira en 15 minutos · Máximo 5 intentos
-          </p>
-
-          <button
-            type="button"
-            (click)="onVerifyOtpSubmit()"
-            [disabled]="getOtpCode().length !== 6 || isLoading()"
-            class="btn-submit btn-emerald">
-            {{ isLoading() ? 'Validando código...' : 'Confirmar y activar cuenta' }}
-          </button>
-
-          <div class="otp-footer">
-            <button type="button" (click)="setMode('register')" class="back-link">
-              ← Cambiar correo
-            </button>
-
-            <span class="cooldown-text">
-              @if (cooldownSeconds() > 0) {
-                Reenviar en {{ cooldownSeconds() }}s
-              } @else {
-                <button type="button" (click)="resendCode()" class="link-switch">Reenviar código</button>
-              }
-            </span>
-          </div>
-        </div>
-      }
-
     </div>
-  </main>
-</div>
+  }
+</ca-auth-shell>

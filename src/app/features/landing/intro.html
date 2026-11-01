@@ -1,0 +1,27 @@
+<div class="frame">
+  <section class="stage" aria-labelledby="intro-title">
+    <div class="beam beam--cool" aria-hidden="true"></div>
+    <div class="beam beam--warm" aria-hidden="true"></div>
+    @if (useVideo()) {
+      <video class="media" [class.is-ready]="videoReady()" autoplay muted [muted]="true" loop playsinline preload="auto"
+             aria-hidden="true" (canplay)="videoReady.set(true)">
+        <source [src]="videoSrc" type="video/mp4" (error)="onVideoError()" />
+      </video>
+    } @else {
+      <ca-globe class="globe" />
+    }
+
+    <ca-public-nav class="nav" />
+
+    <div class="copy">
+      <h1 id="intro-title">Ciberseguridad,<br />paso a paso.</h1>
+      <p>
+        Aprende a detectar el ataque antes de que te detecte a ti.
+      </p>
+      <a routerLink="/explorar" class="ca-btn ca-btn--primary ca-btn--pill cta">
+        Explorar módulos
+        <span class="ca-btn-arrow"><ca-icon name="arrow-right" [size]="18" /></span>
+      </a>
+    </div>
+  </section>
+</div>

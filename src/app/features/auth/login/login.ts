@@ -3,11 +3,13 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
+import { AuthShellComponent } from '../../../shared/ui/auth-shell';
+import { IconComponent } from '../../../shared/ui/icon';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, AuthShellComponent, IconComponent],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
@@ -145,7 +147,7 @@ onRegisterSubmit(): void {
     input.value = val;
 
     if (val && index < 5) {
-      const nextInput = input.parentElement?.children[index + 1] as HTMLInputElement;
+      const nextInput = input.parentElement?.querySelectorAll('input')[index + 1];
       if (nextInput) nextInput.focus();
     }
   }
@@ -153,12 +155,24 @@ onRegisterSubmit(): void {
   onKeyDown(event: KeyboardEvent, index: number): void {
     const input = event.target as HTMLInputElement;
     if (event.key === 'Backspace' && !this.otpDigits[index] && index > 0) {
-      const prevInput = input.parentElement?.children[index - 1] as HTMLInputElement;
+      const prevInput = input.parentElement?.querySelectorAll('input')[index - 1];
       if (prevInput) {
         prevInput.focus();
         this.otpDigits[index - 1] = '';
       }
     }
+  }
+
+  onPaste(event: ClipboardEvent): void {
+    const digits = (event.clipboardData?.getData('text') ?? '').replace(/\D/g, '').slice(0, 6);
+    if (!digits) return;
+    event.preventDefault();
+    const inputs = (event.currentTarget as HTMLElement).querySelectorAll('input');
+    digits.split('').forEach((char, i) => {
+      this.otpDigits[i] = char;
+      inputs[i].value = char;
+    });
+    inputs[Math.min(digits.length, 5)]?.focus();
   }
 
   getOtpCode(): string {

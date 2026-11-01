@@ -1,339 +1,472 @@
-<div class="student-page">
+<ca-app-header>
+  <button type="button" class="ca-btn ca-btn--quiet ca-btn--sm results-btn" (click)="openResults()" aria-label="Mis resultados" title="Mis resultados">
+    <ca-icon name="chart" [size]="16" /> <span class="label">Mis resultados</span>
+  </button>
+</ca-app-header>
 
-  <!-- Encabezado -->
-  <header class="student-header">
-    <div class="header-inner">
-      <div class="brand-logo">
-        <span class="brand-cyber">Cyber</span><span class="brand-academy">Academy</span>
-      </div>
-      <div class="header-label">Panel de módulos</div>
-    </div>
-  </header>
-
-  <main class="student-main">
-    <div class="student-wrapper">
-
-      <section class="welcome-section">
-        <h1 class="welcome-title">Hola, {{ studentName() }}</h1>
-        <p class="welcome-meta">
-          {{ summaries().length }} módulos · {{ completedCount() }} completados · {{ overallProgress() }}% de avance
+<main class="page">
+  <!-- Estado del estudiante y siguiente paso -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <h1 id="hero-title">Hola, {{ studentName() }}</h1>
+      @if (nextModule(); as next) {
+        <p class="hero-lead">
+          Tu siguiente paso es la <strong>{{ nextStepLabel(next) }}</strong> de <strong>{{ next.title }}</strong>.
         </p>
-      </section>
+        <button type="button" class="ca-btn ca-btn--primary" (click)="openModule(next)">
+          <ca-icon name="play" [size]="16" />
+          {{ next.status === 'NOT_STARTED' ? 'Empezar módulo' : 'Continuar módulo' }}
+        </button>
+      } @else if (summaries().length > 0) {
+        <p class="hero-lead">Terminaste todos los módulos disponibles. Revisa tus resultados o espera nuevos módulos.</p>
+      } @else if (!loading()) {
+        <p class="hero-lead">Todavía no hay módulos publicados. Aparecerán aquí en cuanto estén listos.</p>
+      }
+    </div>
 
-      @if (loading()) {
-        <div class="state-box">Cargando tus módulos…</div>
-      } @else if (error()) {
-        <div class="error-banner">
-          <span>{{ error() }}</span>
-          <button type="button" class="btn-retry" (click)="loadProgress()">Reintentar</button>
+    <div class="hero-status">
+      <ca-progress-ring [value]="overallProgress()" label="Avance total" />
+      <dl class="hero-stats">
+        <div class="ca-stat">
+          <dt class="ca-stat-label">Completados</dt>
+          <dd class="ca-stat-value">{{ completedCount() }}<span class="of">/{{ summaries().length }}</span></dd>
         </div>
-      } @else if (summaries().length === 0) {
-        <div class="state-box">
-          <p>Aún no hay módulos disponibles.</p>
-          <p class="state-hint">Cuando el administrador cree módulos aparecerán aquí.</p>
+        <div class="ca-stat">
+          <dt class="ca-stat-label">Nota media</dt>
+          <dd class="ca-stat-value">{{ averageScore() ?? '—' }}</dd>
         </div>
-      } @else {
-        <section class="modules-grid">
-          @for (module of summaries(); track module.moduleId) {
-            <article
-              class="module-card"
-              role="button"
-              tabindex="0"
-              [attr.aria-label]="module.title"
-              (click)="openModule(module)"
-              (keyup.enter)="openModule(module)">
+      </dl>
+    </div>
+  </section>
 
-              <div class="module-card-content">
-                <span class="module-code">{{ module.code }}</span>
-                <h2 class="module-title">{{ module.title }}</h2>
-                <p class="module-desc">{{ module.description || 'Módulo de ciberseguridad' }}</p>
-              </div>
+  <div class="overview">
+    <!-- Mi aprendizaje -->
+    <section class="learning" aria-labelledby="learning-title">
+      <div class="section-head">
+        <h2 id="learning-title" class="section-title">Mi aprendizaje</h2>
+        <div class="ca-segmented tabs" role="group" aria-label="Filtrar mi aprendizaje">
+          <button type="button" [class.is-active]="learningTab() === 'current'" [attr.aria-pressed]="learningTab() === 'current'"
+                  (click)="setLearningTab('current')">
+            <ca-icon name="book" [size]="16" /> Actual <span class="count ca-num">{{ currentModules().length }}</span>
+          </button>
+          <button type="button" [class.is-active]="learningTab() === 'recent'" [attr.aria-pressed]="learningTab() === 'recent'"
+                  (click)="setLearningTab('recent')">
+            <ca-icon name="history" [size]="16" /> Recientes
+          </button>
+          <button type="button" [class.is-active]="learningTab() === 'saved'" [attr.aria-pressed]="learningTab() === 'saved'"
+                  (click)="setLearningTab('saved')">
+            <ca-icon name="bookmark" [size]="16" /> Guardados <span class="count ca-num">{{ savedModules().length }}</span>
+          </button>
+        </div>
+      </div>
 
-              <div class="card-progress">
-                <div class="progress-bar-track">
-                  <div class="progress-bar-fill" [style.width.%]="module.progressPercent"></div>
-                </div>
-                <span class="card-progress-text">{{ module.progressPercent }}%</span>
-              </div>
-
-              <div class="module-card-footer">
-                <span class="module-badge" [ngClass]="statusClass(module.status)">
-                  {{ cardLabel(module) }}
-                </span>
-                <span class="card-sections">{{ module.completedSections }}/{{ module.totalSections }} secciones</span>
-              </div>
-            </article>
-          }
-        </section>
+      @if (saveError(); as message) {
+        <div class="ca-alert ca-alert--threat" role="alert">{{ message }}</div>
       }
 
-      <section class="actions-section">
-        <button type="button" class="btn-primary-action" (click)="openResults()">
-          Ver mis resultados
-        </button>
-        <button type="button" class="btn-secondary-action" (click)="logout()">
-          Cerrar sesión
-        </button>
-      </section>
+      @if (loading()) {
+        <div class="grid grid--learning" aria-busy="true">
+          @for (i of [1, 2]; track i) {
+            <div class="ca-skeleton skeleton-card"></div>
+          }
+        </div>
+      } @else if (learningModules().length > 0) {
+        <div class="grid grid--learning">
+          @for (module of learningModules(); track module.moduleId) {
+            <app-module-card [module]="module" [next]="nextModule()?.moduleId === module.moduleId"
+                             [saving]="savingIds().has(module.moduleId)"
+                             (open)="openModule(module)" (toggleSave)="toggleSaved(module)" />
+          }
+        </div>
+      } @else {
+        <div class="ca-state">
+          @switch (learningTab()) {
+            @case ('current') {
+              <strong>No tienes módulos en curso</strong>
+              @if (nextModule(); as next) {
+                <span>Empieza por {{ next.title }}: son tres lecciones cortas y una práctica.</span>
+                <button type="button" class="ca-btn ca-btn--sm" (click)="openModule(next)">Empezar {{ next.code }}</button>
+              } @else {
+                <span>Cuando empieces un módulo aparecerá aquí.</span>
+              }
+            }
+            @case ('recent') {
+              <strong>Sin actividad todavía</strong>
+              <span>Los módulos en los que avances aparecerán aquí, del más reciente al más antiguo.</span>
+            }
+            @case ('saved') {
+              <strong>No has guardado módulos</strong>
+              <span>Usa el marcador de una tarjeta para guardarla y encontrarla aquí.</span>
+            }
+          }
+        </div>
+      }
+    </section>
 
-    </div>
-  </main>
+    <!-- Liga e insignias -->
+    <aside class="standing" aria-label="Tu liga y tus insignias">
+      @if (profile(); as p) {
+        <a routerLink="/dashboard/leaderboard" class="ca-panel league-card">
+          <ca-league-emblem [code]="p.league.code" [size]="56" />
+          <div class="league-copy">
+            <span class="league-kicker">Tu liga</span>
+            <strong class="league-name" [style.color]="'var(--ca-tier-' + p.league.code.toLowerCase() + ')'">{{ p.league.name }}</strong>
+            <span class="league-meta ca-num">
+              {{ p.xp }} XP
+              @if (p.rank) { · puesto {{ p.rank }} de {{ p.totalRanked }} }
+            </span>
+          </div>
+          <div class="league-next">
+            <div class="ca-meter" [style.--value]="leagueProgress() + '%'"><span></span></div>
+            <span class="ca-field-hint ca-num">
+              @if (p.league.nextMinXp !== null) {
+                Faltan {{ p.league.nextMinXp - p.xp }} XP para {{ p.league.nextName }}
+              } @else {
+                Estás en la liga más alta
+              }
+            </span>
+          </div>
+        </a>
 
-  <!-- Modal: recorrido del módulo -->
-  @if (loadingDetail() || selectedProgress()) {
-    <div class="modal-backdrop" (click)="closeModule()">
-      <div class="modal-container" (click)="$event.stopPropagation()">
+        <a routerLink="/dashboard/profile" class="ca-panel badges-card">
+          <span class="badges-head">
+            <strong>Insignias</strong>
+            <span class="ca-num">{{ earnedBadges() }} de {{ p.badges.length }}</span>
+          </span>
+          <span class="badges-row">
+            @for (badge of p.badges; track badge.code) {
+              <ca-badge-medal [code]="badge.code" [earned]="badge.earned" [size]="34" [title]="badge.name" />
+            }
+          </span>
+        </a>
+      } @else {
+        <div class="ca-skeleton standing-skeleton"></div>
+      }
+    </aside>
+  </div>
 
-        @if (loadingDetail()) {
-          <div class="modal-body">Cargando módulo…</div>
-        } @else if (selectedProgress(); as progress) {
-          <div class="modal-header">
-            <div>
-              <span class="modal-badge-category">{{ progress.summary.code }}</span>
-              <h3 class="modal-title">{{ progress.summary.title }}</h3>
+  <!-- Catálogo -->
+  <section aria-labelledby="modules-title">
+    <h2 id="modules-title" class="section-title">Todos los módulos</h2>
+
+    @if (loading()) {
+      <div class="grid" aria-busy="true">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="ca-skeleton skeleton-card"></div>
+        }
+      </div>
+    } @else if (error()) {
+      <div class="ca-alert ca-alert--threat" role="alert">
+        <span>{{ error() }}</span>
+        <button type="button" class="ca-btn ca-btn--sm" (click)="loadProgress()">Reintentar</button>
+      </div>
+    } @else if (summaries().length === 0) {
+      <div class="ca-state">
+        <strong>Aún no hay módulos</strong>
+        <span>Cuando se publique el primero lo verás aquí sin recargar la página.</span>
+      </div>
+    } @else {
+      <div class="grid">
+        @for (module of summaries(); track module.moduleId) {
+          <app-module-card [module]="module" [next]="nextModule()?.moduleId === module.moduleId"
+                           [saving]="savingIds().has(module.moduleId)"
+                           (open)="openModule(module)" (toggleSave)="toggleSaved(module)" />
+        }
+      </div>
+    }
+  </section>
+</main>
+
+<!-- Sesión de aprendizaje -->
+@if (loadingDetail() || selectedProgress()) {
+  <div class="ca-backdrop" (click)="closeModule()">
+    <div class="ca-dialog ca-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="lesson-title"
+         (click)="$event.stopPropagation()">
+      @if (loadingDetail()) {
+        <div class="ca-dialog-body"><span class="ca-loader">Cargando módulo…</span></div>
+      } @else if (selectedProgress(); as progress) {
+        <div class="ca-dialog-head">
+          <div class="lesson-title-row">
+            <ca-module-cover class="dialog-cover" [cover]="progress.summary.cover" [seed]="progress.summary.code" />
+            <div class="lesson-heading">
+              <span class="ca-code">{{ progress.summary.code }}</span>
+              <h2 id="lesson-title">{{ progress.summary.title }}</h2>
             </div>
-            <button type="button" class="modal-close-btn" (click)="closeModule()">✕</button>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="ca-icon-btn" [class.is-saved]="progress.summary.saved"
+                    [attr.aria-pressed]="progress.summary.saved" [disabled]="savingIds().has(progress.summary.moduleId)"
+                    [attr.aria-label]="progress.summary.saved ? 'Quitar de guardados' : 'Guardar módulo'"
+                    [title]="progress.summary.saved ? 'Quitar de guardados' : 'Guardar para después'"
+                    (click)="toggleSaved(progress.summary)">
+              <ca-icon [name]="progress.summary.saved ? 'bookmark-filled' : 'bookmark'" />
+            </button>
+            <button type="button" class="ca-icon-btn" (click)="closeModule()" aria-label="Cerrar módulo">
+              <ca-icon name="close" />
+            </button>
+          </div>
+        </div>
+
+        <div class="ca-dialog-body">
+          <div class="route">
+            <ca-circuit-track [steps]="sectionSteps(progress)" />
+            <p class="route-meta ca-num">
+              {{ statusLabel(progress.summary.status) }} · nota mínima {{ progress.summary.passingScore }} pts
+              @if (progress.summary.score !== null) { · tu nota {{ progress.summary.score }} pts }
+            </p>
           </div>
 
-          <div class="modal-body">
-            <p class="modal-description">{{ progress.summary.description }}</p>
-
-            <div class="modal-status-box">
-              <div class="modal-status-row">
-                <span class="modal-status-label">
-                  Estado: <strong>{{ statusLabel(progress.summary.status) }}</strong>
-                </span>
-                <span class="modal-badge-status" [ngClass]="statusClass(progress.summary.status)">
-                  {{ progress.summary.score !== null ? progress.summary.score + ' pts' : 'Sin nota' }}
-                </span>
-              </div>
-
-              <div class="progress-bar-wrapper">
-                <div class="progress-bar-track">
-                  <div class="progress-bar-fill" [style.width.%]="progress.summary.progressPercent"></div>
-                </div>
-                <span class="progress-bar-text">{{ progress.summary.progressPercent }}%</span>
-              </div>
-
-              <div class="modal-min-score">
-                Nota mínima para aprobar: {{ progress.summary.passingScore }} pts ·
-                {{ progress.summary.completedSections }}/{{ progress.summary.totalSections }} secciones completadas
-              </div>
+          @if (action(); as message) {
+            <div class="ca-alert" role="status"
+                 [class.ca-alert--secure]="message.type === 'success'"
+                 [class.ca-alert--threat]="message.type === 'error'">
+              {{ message.text }}
             </div>
+          }
 
-            @if (action(); as message) {
-              <div class="modal-message" [class.message-error]="message.type === 'error'">
-                {{ message.text }}
-              </div>
-            }
+          @if (loadingSection()) {
+            <span class="ca-loader">Cargando la sesión…</span>
+          } @else if (currentContent(); as content) {
+            <article class="lesson">
+              <header class="lesson-head">
+                <span class="ca-badge ca-badge--plain" [class.ca-badge--warn]="content.type === 'PRACTICE'"
+                      [class.ca-badge--signal]="content.type === 'THEORY'">
+                  {{ content.type === 'PRACTICE' ? 'Práctica final' : 'Teoría ' + content.order }}
+                </span>
+                <h3>{{ content.title }}</h3>
+              </header>
 
-            <div class="sections-list">
-              <h4 class="objectives-title">Ruta de aprendizaje</h4>
+              @if (content.content) {
+                <div class="lesson-text">{{ content.content }}</div>
+              }
 
-              @for (section of progress.sections; track section.sectionId) {
-                <div
-                  class="section-row"
-                  [class.section-current]="currentContent()?.sectionId === section.sectionId">
-                  <div class="section-info">
-                    <span class="section-type" [class.practice]="section.type === 'PRACTICE'">
-                      {{ sectionLabel(section) }}
-                    </span>
-                    <span class="section-title">{{ section.title }}</span>
-                    <span class="section-meta">
-                      @if (section.questionCount > 0) {
-                        {{ section.questionCount }} pregunta{{ section.questionCount === 1 ? '' : 's' }} ·
+              @if (content.type === 'THEORY') {
+                @if (content.questions[0]; as question) {
+                  <fieldset class="quiz">
+                    <legend>Comprueba lo que aprendiste</legend>
+                    <p class="quiz-prompt">{{ question.prompt }}</p>
+                    @for (option of question.options; track option.id) {
+                      <label class="ca-option"
+                             [class.is-right]="theoryFeedback()?.correct && theorySelection() === option.id"
+                             [class.is-wrong]="theoryFeedback() && !theoryFeedback()!.correct && theorySelection() === option.id">
+                        <input type="radio" [name]="'theory-' + question.id"
+                               [checked]="theorySelection() === option.id"
+                               [disabled]="theoryFeedback()?.correct"
+                               (change)="selectTheoryOption(option.id)" />
+                        <span>{{ option.text }}</span>
+                      </label>
+                    }
+                  </fieldset>
+
+                  @if (theoryFeedback(); as fb) {
+                    <div class="feedback" [class.is-right]="fb.correct" [class.is-wrong]="!fb.correct" role="status">
+                      <p class="feedback-title">
+                        <ca-icon [name]="fb.correct ? 'check' : 'alert'" [size]="18" />
+                        {{ fb.correct ? '¡Correcto!' : 'No es correcto' }}
+                      </p>
+                      @if (fb.feedback) {
+                        <p>{{ fb.feedback }}</p>
                       }
-                      <span [ngClass]="sectionStateClass(section)">{{ sectionStateLabel(section) }}</span>
-                    </span>
+                      @if (fb.explanation) {
+                        <div class="feedback-lesson">
+                          <h4>Por qué importa</h4>
+                          <p>{{ fb.explanation }}</p>
+                        </div>
+                      }
+                      @if (!fb.correct) {
+                        <p class="feedback-hint">Repasa el contenido de arriba, elige otra opción y vuelve a comprobar.</p>
+                      }
+                    </div>
+                  }
+
+                  <div class="lesson-actions">
+                    @if (theoryFeedback()?.correct) {
+                      <button type="button" class="ca-btn ca-btn--primary" (click)="continueAfterTheory()">
+                        Continuar <ca-icon name="arrow-right" [size]="18" />
+                      </button>
+                    } @else {
+                      <button type="button" class="ca-btn ca-btn--primary"
+                              [disabled]="!theorySelection() || checking() || !!theoryFeedback()" (click)="checkTheory()">
+                        {{ checking() ? 'Comprobando…' : 'Comprobar respuesta' }}
+                      </button>
+                    }
+                  </div>
+                } @else {
+                  <div class="ca-state">Esta teoría todavía no tiene pregunta. Vuelve más tarde.</div>
+                }
+              } @else {
+                @if (content.questions.length === 0) {
+                  <div class="ca-state">La práctica todavía no tiene preguntas. Vuelve más tarde.</div>
+                } @else {
+                  <div class="ca-alert ca-alert--warn">
+                    @if (attemptsLeft(progress) === 1) {
+                      Es tu último intento: si no llegas a la nota mínima, el módulo quedará cerrado hasta que el administrador reanude tus intentos.
+                    } @else {
+                      Tienes {{ attemptsLeft(progress) }} intentos. Al enviarla se corrige al momento; si no llegas a la nota mínima, podrás repasar qué fallaste y volver a intentarlo.
+                    }
                   </div>
 
-                  <span class="section-state-icon" [ngClass]="sectionStateClass(section)">
-                    @if (section.status === 'COMPLETED') {
-                      ✓
-                    } @else if (!section.accessible) {
-                      🔒
-                    } @else {
-                      →
-                    }
-                  </span>
-                </div>
-              }
-            </div>
-
-            @if (loadingSection()) {
-              <div class="state-box">Cargando la sesión…</div>
-            } @else if (currentContent(); as content) {
-              <div class="lesson-box">
-                <div class="lesson-header">
-                  <span class="lesson-badge" [class.practice]="content.type === 'PRACTICE'">
-                    {{ content.type === 'PRACTICE' ? 'Práctica' : 'Teoría ' + content.order }}
-                  </span>
-                  <h4 class="lesson-title">{{ content.title }}</h4>
-                </div>
-
-                @if (content.content) {
-                  <div class="lesson-content">{{ content.content }}</div>
-                }
-
-                @if (content.type === 'THEORY') {
-                  @if (content.questions[0]; as question) {
-                    <div class="quiz-box">
-                      <p class="quiz-eyebrow">Pregunta de comprensión</p>
+                  @for (question of content.questions; track question.id; let qi = $index) {
+                    <fieldset class="quiz">
+                      <legend class="ca-num">Pregunta {{ qi + 1 }} de {{ content.questions.length }}</legend>
                       <p class="quiz-prompt">{{ question.prompt }}</p>
-
                       @for (option of question.options; track option.id) {
-                        <label class="quiz-option" [class.selected]="theorySelection() === option.id">
-                          <input
-                            type="radio"
-                            [name]="'theory-' + question.id"
-                            [checked]="theorySelection() === option.id"
-                            (change)="selectTheoryOption(option.id)" />
+                        <label class="ca-option">
+                          <input type="radio" [name]="'practice-' + question.id"
+                                 [checked]="practiceAnswers()[question.id] === option.id"
+                                 (change)="selectPracticeOption(question.id, option.id)" />
                           <span>{{ option.text }}</span>
                         </label>
                       }
+                    </fieldset>
+                  }
 
-                      <button
-                        type="button"
-                        class="btn-save-score full"
-                        [disabled]="!theorySelection() || checking()"
-                        (click)="checkTheory()">
-                        {{ checking() ? 'Comprobando…' : 'Comprobar respuesta' }}
+                  @if (confirmingPractice()) {
+                    <div class="confirm" role="alertdialog" aria-labelledby="confirm-title">
+                      <p id="confirm-title"><strong>¿Enviar la práctica ahora?</strong> No podrás cambiar tus respuestas.</p>
+                      <div class="lesson-actions">
+                        <button type="button" class="ca-btn" (click)="cancelSubmitPractice()">Revisar respuestas</button>
+                        <button type="button" class="ca-btn ca-btn--primary" [disabled]="submittingPractice()"
+                                (click)="submitPractice()">
+                          {{ submittingPractice() ? 'Enviando…' : 'Sí, enviar práctica' }}
+                        </button>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="lesson-actions">
+                      <span class="ca-field-hint ca-num">{{ answeredCount() }} de {{ content.questions.length }} respondidas</span>
+                      <button type="button" class="ca-btn ca-btn--primary"
+                              [disabled]="submittingPractice() || answeredCount() < content.questions.length"
+                              (click)="submitPractice()">
+                        Enviar práctica
                       </button>
                     </div>
-                  } @else {
-                    <div class="state-box">
-                      El administrador todavía no configuró la pregunta de esta teoría.
-                    </div>
-                  }
-                } @else {
-                  <div class="practice-summary">
-                    <span>{{ answeredCount() }}/{{ content.questions.length }} respondidas</span>
-                    <span class="practice-warning">Un solo intento</span>
-                  </div>
-
-                  @if (content.questions.length === 0) {
-                    <div class="state-box">
-                      El administrador todavía no configuró las preguntas de la práctica.
-                    </div>
-                  } @else {
-                    @for (question of content.questions; track question.id; let qi = $index) {
-                      <div class="quiz-box">
-                        <p class="quiz-prompt">{{ qi + 1 }}. {{ question.prompt }}</p>
-
-                        @for (option of question.options; track option.id) {
-                          <label
-                            class="quiz-option"
-                            [class.selected]="practiceAnswers()[question.id] === option.id">
-                            <input
-                              type="radio"
-                              [name]="'practice-' + question.id"
-                              [checked]="practiceAnswers()[question.id] === option.id"
-                              (change)="selectPracticeOption(question.id, option.id)" />
-                            <span>{{ option.text }}</span>
-                          </label>
-                        }
-                      </div>
-                    }
-
-                    <button
-                      type="button"
-                      class="btn-save-score full"
-                      [disabled]="submittingPractice() || answeredCount() < content.questions.length"
-                      (click)="submitPractice()">
-                      {{ submittingPractice() ? 'Enviando…' : 'Enviar práctica' }}
-                    </button>
-
-                    <p class="practice-disclaimer">
-                      Al enviarla, la práctica se corrige automáticamente y todas las sesiones quedan bloqueadas.
-                    </p>
                   }
                 }
-              </div>
-            } @else if (moduleFinished(progress)) {
-              <div class="final-box">
-                <h4 class="final-title">Módulo finalizado</h4>
-                <p class="final-score">
-                  Nota final: <strong>{{ progress.summary.score ?? '—' }} pts</strong>
-                  · Mínimo para aprobar: {{ progress.summary.passingScore }} pts
+              }
+            </article>
+          } @else if (moduleFinished(progress)) {
+            <div class="result" [class.is-passed]="progress.summary.passed">
+              <span class="result-score ca-num">{{ progress.summary.score ?? '—' }}<small> pts</small></span>
+              <div>
+                <h3>{{ progress.summary.passed ? 'Módulo aprobado' : 'Módulo no aprobado' }}</h3>
+                <p>
+                  La nota mínima era {{ progress.summary.passingScore }} pts.
+                  @if (progress.summary.passed) {
+                    Este módulo cuenta para tu avance total.
+                  } @else if (attemptsLeft(progress) > 0) {
+                    {{ attemptsLeft(progress) === 1 ? 'Te queda 1 intento.' : 'Te quedan ' + attemptsLeft(progress) + ' intentos.' }}
+                    Repasa qué fallaste y vuelve a intentarlo.
+                  } @else {
+                    Usaste los {{ progress.summary.maxPracticeAttempts }} intentos. Revisa la corrección completa; si necesitas
+                    volver a presentarla, pide al administrador que reanude tus intentos.
+                  }
                 </p>
-                <p class="final-status" [ngClass]="progress.summary.passed ? 'badge-completed' : 'badge-failed'">
-                  {{ progress.summary.passed ? 'Aprobado' : 'No aprobado' }}
-                </p>
-                <p class="state-hint">Las sesiones quedaron bloqueadas.</p>
               </div>
-            } @else {
-              <div class="state-box">
-                Esta sesión todavía no está configurada. El administrador debe añadir su contenido y preguntas.
-              </div>
-            }
-          </div>
+            </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn-modal-cancel" (click)="closeModule()">Cerrar</button>
-          </div>
-        }
+            @if (practiceReview(); as review) {
+              <section class="review" aria-labelledby="review-title">
+                <header class="review-head">
+                  <h3 id="review-title">Corrección de la práctica</h3>
+                  <span class="ca-num review-count">{{ review.correctCount }} de {{ review.totalQuestions }} correctas</span>
+                </header>
+                @if (!review.passed && attemptsLeft(progress) > 0) {
+                  <p class="review-note">
+                    Como puedes reintentarla, aquí solo ves qué preguntas fallaste y por qué tu respuesta no era la
+                    correcta. La respuesta correcta y la explicación completa aparecen cuando apruebes.
+                  </p>
+                }
+                @for (q of review.questions; track q.id; let qi = $index) {
+                  <article class="review-item" [class.is-right]="q.correct" [class.is-wrong]="!q.correct">
+                    <p class="review-q">
+                      <span class="ca-badge ca-badge--plain" [class.ca-badge--secure]="q.correct" [class.ca-badge--threat]="!q.correct">
+                        {{ q.correct ? 'Correcta' : 'Incorrecta' }}
+                      </span>
+                      <span class="ca-num">{{ qi + 1 }}.</span> {{ q.prompt }}
+                    </p>
+                    <ul class="review-options">
+                      @for (o of q.options; track o.id) {
+                        <li [class.is-correct]="o.correct || (o.chosen && q.correct)" [class.is-chosen]="o.chosen">
+                          <ca-icon [name]="o.correct || (o.chosen && q.correct) ? 'check' : (o.chosen ? 'close' : 'arrow-right')" [size]="16" />
+                          <span>{{ o.text }}</span>
+                          @if (o.chosen) { <small>Tu respuesta</small> }
+                          @if (o.correct && !o.chosen) { <small>Respuesta correcta</small> }
+                        </li>
+                      }
+                    </ul>
+                    @if (q.feedback) {
+                      <p class="review-feedback">{{ q.feedback }}</p>
+                    }
+                    @if (q.explanation) {
+                      <div class="feedback-lesson">
+                        <h4>Por qué importa</h4>
+                        <p>{{ q.explanation }}</p>
+                      </div>
+                    }
+                  </article>
+                }
+              </section>
+            }
+            <div class="lesson-actions">
+              @if (!practiceReview()) {
+                <button type="button" class="ca-btn" [disabled]="loadingReview()"
+                        (click)="loadPracticeReview(progress.summary.moduleId)">
+                  {{ loadingReview() ? 'Cargando corrección…' : 'Ver corrección' }}
+                </button>
+              }
+              @if (!progress.summary.passed && attemptsLeft(progress) > 0) {
+                <button type="button" class="ca-btn ca-btn--primary" [disabled]="loadingSection()"
+                        (click)="retryPractice(progress)">
+                  Reintentar práctica
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="ca-state">Esta sesión aún no tiene contenido. Vuelve más tarde.</div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- Resultados -->
+@if (showResultsModal()) {
+  <div class="ca-backdrop" (click)="closeResults()">
+    <div class="ca-dialog" role="dialog" aria-modal="true" aria-labelledby="results-title"
+         (click)="$event.stopPropagation()">
+      <div class="ca-dialog-head">
+        <h2 id="results-title">Tus resultados</h2>
+        <button type="button" class="ca-icon-btn" (click)="closeResults()" aria-label="Cerrar resultados">
+          <ca-icon name="close" />
+        </button>
+      </div>
+
+      <div class="ca-dialog-body">
+        <dl class="results-stats">
+          <div class="ca-stat"><dt class="ca-stat-label">Módulos</dt><dd class="ca-stat-value">{{ summaries().length }}</dd></div>
+          <div class="ca-stat"><dt class="ca-stat-label">Completados</dt><dd class="ca-stat-value">{{ completedCount() }}</dd></div>
+          <div class="ca-stat"><dt class="ca-stat-label">Nota media</dt><dd class="ca-stat-value">{{ averageScore() ?? '—' }}</dd></div>
+          <div class="ca-stat"><dt class="ca-stat-label">Avance</dt><dd class="ca-stat-value">{{ overallProgress() }}%</dd></div>
+        </dl>
+
+        <ul class="results-list">
+          @for (summary of summaries(); track summary.moduleId) {
+            <li>
+              <div class="results-row">
+                <span><span class="ca-code">{{ summary.code }}</span> {{ summary.title }}</span>
+                <span class="ca-num" [class.passed]="summary.passed">
+                  {{ summary.score !== null ? summary.score + ' pts' : statusLabel(summary.status) }}
+                </span>
+              </div>
+              <div class="ca-meter" [class.ca-meter--secure]="summary.passed" [style.--value]="summary.progressPercent + '%'">
+                <span></span>
+              </div>
+            </li>
+          }
+        </ul>
       </div>
     </div>
-  }
-
-  <!-- Modal: resultados -->
-  @if (showResultsModal()) {
-    <div class="modal-backdrop" (click)="closeResults()">
-      <div class="modal-container modal-results" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <div>
-            <span class="modal-badge-category">Rendimiento académico</span>
-            <h3 class="modal-title">Resultados de {{ studentName() }}</h3>
-          </div>
-          <button type="button" class="modal-close-btn" (click)="closeResults()">✕</button>
-        </div>
-
-        <div class="modal-body">
-          <div class="results-stats-grid">
-            <div class="results-stat-card">
-              <span class="stat-number">{{ summaries().length }}</span>
-              <span class="stat-label">Módulos</span>
-            </div>
-            <div class="results-stat-card">
-              <span class="stat-number">{{ completedCount() }}</span>
-              <span class="stat-label">Completados</span>
-            </div>
-            <div class="results-stat-card">
-              <span class="stat-number">{{ averageScore() ?? '—' }}</span>
-              <span class="stat-label">Media de módulos</span>
-            </div>
-            <div class="results-stat-card">
-              <span class="stat-number">{{ overallProgress() }}%</span>
-              <span class="stat-label">Avance</span>
-            </div>
-          </div>
-
-          <div class="results-breakdown">
-            <h4 class="breakdown-title">Nota final por módulo</h4>
-
-            @for (summary of summaries(); track summary.moduleId) {
-              <div class="breakdown-item">
-                <div class="breakdown-info">
-                  <span class="breakdown-name">{{ summary.code }} · {{ summary.title }}</span>
-                  <span
-                    class="breakdown-pct"
-                    [ngClass]="summary.passed ? 'text-emerald' : 'text-muted'">
-                    {{ summary.score !== null ? summary.score + ' pts' : statusLabel(summary.status) }}
-                  </span>
-                </div>
-                <div class="breakdown-bar">
-                  <div class="breakdown-fill" [style.width.%]="summary.progressPercent"></div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn-modal-cancel" (click)="closeResults()">Cerrar</button>
-        </div>
-      </div>
-    </div>
-  }
-
-</div>
+  </div>
+}

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <!-- Fondo redondeado suave -->
-  <rect width="32" height="32" rx="8" fill="#ecfdf5"/>
-  <rect x="0.5" y="0.5" width="31" height="31" rx="7.5" stroke="#a7f3d0"/>
-  <!-- Escudo Verde con Check de Ciberseguridad -->
-  <path d="M12 16.5l3 3 5.5-5.5m7-5.5A16 16 0 0116 4 16 16 0 014.5 8.5C4.5 16 9.5 22.5 16 28c6.5-5.5 11.5-12 11.5-19.5z" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect width="32" height="32" rx="7" fill="#070709"/>
+  <path d="M16 3.5l10.5 3.8v8c0 6.4-4.5 11.2-10.5 13-6-1.8-10.5-6.6-10.5-13v-8z" stroke="#ededf2" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M10 14h3.8l1.8-1.8H22M10 18.5h6l1.8 1.8H22" stroke="#8f97ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="22" cy="12.2" r="1.6" fill="#8f97ff"/>
+  <circle cx="22" cy="20.3" r="1.6" fill="#ff8a4c"/>
 </svg>
