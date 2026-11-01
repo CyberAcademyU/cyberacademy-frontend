@@ -1,0 +1,87 @@
+<div class="page">
+  <ca-public-nav class="nav" />
+
+  <header class="intro">
+    <div class="beam" aria-hidden="true"></div>
+    <h1>Módulos</h1>
+    <p>
+      Cada módulo tiene tres lecciones cortas, con una pregunta para comprobar lo que aprendiste,
+      y una práctica final con nota inmediata. Empieza por el primero y avanza a tu ritmo.
+    </p>
+  </header>
+
+  <main>
+    @if (loading()) {
+      <div class="grid" aria-busy="true">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <div class="ca-skeleton skeleton"></div>
+        }
+      </div>
+    } @else if (error()) {
+      <div class="ca-state" role="alert">
+        <strong>Catálogo no disponible</strong>
+        <span>{{ error() }}</span>
+        <button type="button" class="ca-btn ca-btn--sm" (click)="load()">Reintentar</button>
+      </div>
+    } @else if (modules().length === 0) {
+      <div class="ca-state">
+        <strong>Aún no hay módulos publicados</strong>
+        <span>Vuelve pronto: el equipo está preparando los primeros contenidos.</span>
+      </div>
+    } @else {
+      <ol class="grid" role="list">
+        @for (module of modules(); track module.code; let i = $index) {
+          <li class="card">
+            <ca-module-cover class="cover" [cover]="module.cover" [seed]="module.code" />
+            <div class="body">
+              <div class="head">
+                <span class="order">Módulo {{ i + 1 }}</span>
+                <span class="ca-code">{{ module.code }}</span>
+              </div>
+
+              <h2>{{ module.title }}</h2>
+              @if (module.description) {
+                <p class="desc">{{ module.description }}</p>
+              }
+
+              @if (module.topics.length) {
+                <div class="topics">
+                  <h3>Lo que verás</h3>
+                  <ol>
+                    @for (topic of module.topics; track $index) {
+                      <li>{{ topic }}</li>
+                    }
+                  </ol>
+                </div>
+              }
+
+              <div class="foot">
+                <span class="facts">
+                  <ca-icon name="book" [size]="16" /> 3 lecciones y una práctica.
+                  {{ module.passingScore > 0 ? 'Apruebas con ' + module.passingScore + '.' : 'No se suspende: mide desde dónde empiezas.' }}
+                </span>
+                <a [routerLink]="startLink()" class="ca-btn ca-btn--sm">
+                  {{ signedIn() ? 'Ir al módulo' : 'Empezar' }}
+                </a>
+              </div>
+            </div>
+          </li>
+        }
+      </ol>
+    }
+  </main>
+
+  @if (!signedIn()) {
+    <section class="closing" aria-labelledby="closing-title">
+      <h2 id="closing-title">Tu progreso se guarda en tu cuenta.</h2>
+      <p>Crea una cuenta gratis para seguir tus módulos, ganar insignias y subir en la clasificación.</p>
+      <div class="closing-actions">
+        <a routerLink="/auth/register" class="ca-btn ca-btn--primary ca-btn--pill">
+          Crear cuenta
+          <span class="ca-btn-arrow"><ca-icon name="arrow-right" [size]="18" /></span>
+        </a>
+        <a routerLink="/auth/login" class="ca-btn">Ya tengo cuenta</a>
+      </div>
+    </section>
+  }
+</div>

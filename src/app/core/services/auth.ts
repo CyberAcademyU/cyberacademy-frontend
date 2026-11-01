@@ -62,7 +62,7 @@ export class AuthService {
 
   handleUnauthorized(): void {
     this.clearSession();
-    void this.router.navigate(['/auth/login']);
+    void this.router.navigate(['/']);
   }
 
   clearSession(): void {

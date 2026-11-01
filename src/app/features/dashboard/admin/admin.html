@@ -1,644 +1,515 @@
-<div class="admin-layout">
-
-  <!-- =========================================================================
-       BARRA LATERAL IZQUIERDA
-       ========================================================================= -->
+<div class="layout">
+  <!-- Navegación -->
   <aside class="sidebar">
-    <div class="sidebar-top">
-
-      <div class="brand-container">
-        <div class="brand-logo">
-          <span class="brand-cyber">Cyber</span><span class="brand-academy">Academy</span>
-        </div>
-        <div class="brand-subtitle">Administrador</div>
-      </div>
-
-      <nav class="nav-menu">
-        <button
-          type="button"
-          (click)="selectTab('resumen')"
-          [class.active]="activeTab() === 'resumen'"
-          class="nav-item">
-          Resumen
-        </button>
-
-        <button
-          type="button"
-          (click)="selectTab('modulos')"
-          [class.active]="activeTab() === 'modulos'"
-          class="nav-item">
-          Módulos
-        </button>
-
-        <button
-          type="button"
-          (click)="selectTab('usuarios')"
-          [class.active]="activeTab() === 'usuarios'"
-          class="nav-item">
-          Usuarios
-        </button>
-      </nav>
+    <div class="brand">
+      <ca-logo class="ca-logo-collapse" [size]="28" />
+      <span class="role">Administración</span>
     </div>
 
-    <div class="sidebar-bottom">
-      <button type="button" (click)="logout()" class="logout-btn">
-        <span>Cerrar sesión</span>
+    <nav class="nav" aria-label="Secciones">
+      <button type="button" class="nav-item" [class.is-active]="activeTab() === 'resumen'"
+              [attr.aria-current]="activeTab() === 'resumen' ? 'page' : null" (click)="selectTab('resumen')">
+        <ca-icon name="overview" /> <span>Resumen</span>
+      </button>
+      <button type="button" class="nav-item" [class.is-active]="activeTab() === 'modulos'"
+              [attr.aria-current]="activeTab() === 'modulos' ? 'page' : null" (click)="selectTab('modulos')">
+        <ca-icon name="modules" /> <span>Módulos</span>
+      </button>
+      <button type="button" class="nav-item" [class.is-active]="activeTab() === 'usuarios'"
+              [attr.aria-current]="activeTab() === 'usuarios' ? 'page' : null" (click)="selectTab('usuarios')">
+        <ca-icon name="users" /> <span>Estudiantes</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <span class="who" [title]="user()?.email ?? ''">{{ user()?.firstName }} {{ user()?.lastName }}</span>
+      <button type="button" class="ca-icon-btn" (click)="logout()" aria-label="Cerrar sesión" title="Cerrar sesión">
+        <ca-icon name="logout" />
       </button>
     </div>
   </aside>
 
-  <!-- =========================================================================
-       ÁREA PRINCIPAL
-       ========================================================================= -->
-  <main class="main-content">
-
+  <main class="main">
     @if (exportSuccess()) {
-      <div class="export-banner">
-        <div class="export-banner-text">
-          <svg class="icon-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          <span>Archivo <strong>resultados_estudiantes_cyberacademy.csv</strong> descargado exitosamente.</span>
-        </div>
-        <button (click)="exportSuccess.set(false)" class="export-banner-close">×</button>
+      <div class="ca-alert ca-alert--secure toast" role="status">
+        <span>Descargaste <strong>resultados_estudiantes_cyberacademy.csv</strong>.</span>
+        <button type="button" class="ca-icon-btn" (click)="exportSuccess.set(false)" aria-label="Cerrar aviso">
+          <ca-icon name="close" [size]="16" />
+        </button>
       </div>
     }
 
-    <!-- PESTAÑA 1: RESUMEN -->
+    <!-- Resumen -->
     @if (activeTab() === 'resumen') {
-      <div class="content-wrapper">
-        <div class="header-row">
-          <div>
-            <h1 class="page-title">Resumen general</h1>
-            <p class="page-subtitle">Actividad real de los estudiantes de CyberAcademy</p>
+      <header class="page-head">
+        <div>
+          <h1>Resumen</h1>
+          <p>Actividad real de tus estudiantes.</p>
+        </div>
+        <button type="button" class="ca-btn" (click)="exportResults()" [disabled]="students().length === 0">
+          <ca-icon name="download" /> Exportar resultados
+        </button>
+      </header>
+
+      @if (overviewLoading()) {
+        <span class="ca-loader">Cargando resumen…</span>
+      } @else if (overviewError()) {
+        <div class="ca-alert ca-alert--threat" role="alert">
+          <span>{{ overviewError() }}</span>
+          <button type="button" class="ca-btn ca-btn--sm" (click)="loadOverview()">Reintentar</button>
+        </div>
+      } @else if (overview(); as data) {
+        <dl class="metrics">
+          <div class="metric">
+            <dt class="ca-stat-label">Estudiantes</dt>
+            <dd class="ca-stat-value">{{ data.totalStudents }}</dd>
+            <dd class="metric-sub">{{ data.activeStudents }} activos</dd>
+          </div>
+          <div class="metric">
+            <dt class="ca-stat-label">Terminaron todo</dt>
+            <dd class="ca-stat-value is-secure">{{ data.studentsCompletedAll }}</dd>
+            <dd class="metric-sub">{{ completionRate() }} % del total</dd>
+          </div>
+          <div class="metric">
+            <dt class="ca-stat-label">Nota media</dt>
+            <dd class="ca-stat-value">{{ formatScore(data.averageScore) }}</dd>
+            <dd class="metric-sub">Avance medio {{ data.averageProgress }} %</dd>
+          </div>
+          <div class="metric">
+            <dt class="ca-stat-label">Módulos activos</dt>
+            <dd class="ca-stat-value">{{ data.totalActiveModules }}</dd>
+            <dd class="metric-sub">En el catálogo</dd>
+          </div>
+        </dl>
+
+        <div class="panels">
+          <section class="ca-panel panel" aria-labelledby="completion-title">
+            <h2 id="completion-title">Estudiantes que completaron cada módulo</h2>
+            @if (data.modules.length === 0) {
+              <p class="empty">Todavía no hay módulos activos.</p>
+            } @else {
+              <ul class="bars">
+                @for (mod of data.modules; track mod.moduleId) {
+                  <li>
+                    <div class="bar-row">
+                      <span class="bar-name" [title]="mod.title"><span class="ca-code">{{ mod.code }}</span> {{ mod.title }}</span>
+                      <span class="ca-num bar-figure">{{ mod.completedStudents }}/{{ data.totalStudents }} · {{ mod.completionPercent }} %</span>
+                    </div>
+                    <div class="ca-meter ca-meter--secure" [style.--value]="mod.completionPercent + '%'"><span></span></div>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+
+          <section class="ca-panel panel" aria-labelledby="activity-title">
+            <h2 id="activity-title">Últimas actividades</h2>
+            @if (data.recentActivity.length === 0) {
+              <p class="empty">Aún no hay actividad registrada.</p>
+            } @else {
+              <ol class="feed">
+                @for (act of data.recentActivity; track $index) {
+                  <li>
+                    <div class="feed-head">
+                      <strong>{{ act.studentName }}</strong>
+                      @if (act.score !== null) {
+                        <span class="ca-num feed-score">{{ act.score }} pts</span>
+                      }
+                    </div>
+                    <span class="feed-detail">{{ act.sectionTitle }} en <span class="ca-code">{{ act.moduleCode }}</span></span>
+                    <time class="feed-time" [attr.datetime]="act.occurredAt">{{ relativeTime(act.occurredAt) }}</time>
+                  </li>
+                }
+              </ol>
+            }
+          </section>
+        </div>
+      }
+    }
+
+    <!-- Módulos -->
+    @if (activeTab() === 'modulos') {
+      <header class="page-head">
+        <div>
+          <h1>Módulos</h1>
+          <p>Crea módulos, redacta sus 3 teorías y define las preguntas de la práctica.</p>
+        </div>
+        @if (!showCreateForm()) {
+          <button type="button" class="ca-btn ca-btn--primary" (click)="openCreateForm()">
+            <ca-icon name="plus" /> Nuevo módulo
+          </button>
+        }
+      </header>
+
+      @if (modulesMessage()) {
+        <div class="ca-alert" role="status">{{ modulesMessage() }}</div>
+      }
+
+      @if (showCreateForm()) {
+        <section class="ca-panel ca-panel--cut create" aria-labelledby="create-title">
+          <h2 id="create-title">Nuevo módulo</h2>
+
+          @if (createError()) {
+            <div class="ca-alert ca-alert--threat" role="alert">{{ createError() }}</div>
+          }
+
+          <div class="form-grid">
+            <div class="ca-field">
+              <label for="nm-code">Código</label>
+              <input id="nm-code" class="ca-input" [(ngModel)]="newModule.code" type="text" maxlength="50" placeholder="MOD-01" />
+            </div>
+            <div class="ca-field">
+              <label for="nm-title">Título</label>
+              <input id="nm-title" class="ca-input" [(ngModel)]="newModule.title" type="text" maxlength="150"
+                     placeholder="Fundamentos de ciberseguridad" />
+            </div>
+            <div class="ca-field span-2">
+              <label for="nm-desc">Descripción</label>
+              <textarea id="nm-desc" class="ca-input" [(ngModel)]="newModule.description" rows="2" maxlength="2000"
+                        placeholder="Qué aprenderá el estudiante en este módulo"></textarea>
+            </div>
+            <div class="ca-field">
+              <label for="nm-order">Orden en el catálogo</label>
+              <input id="nm-order" class="ca-input" [(ngModel)]="newModule.orderIndex" type="number" min="1" />
+            </div>
+            <div class="ca-field">
+              <label for="nm-pass">Nota mínima para aprobar</label>
+              <input id="nm-pass" class="ca-input" [(ngModel)]="newModule.passingScore" type="number" min="0" max="100" step="0.01" />
+            </div>
+            <ca-cover-picker class="span-2" name="nm-cover" [value]="newModule.cover" [seed]="newModule.code"
+                             (valueChange)="newModule.cover = $event" />
           </div>
 
-          <div>
-            <button type="button" (click)="exportResults()" class="btn-export" [disabled]="students().length === 0">
-              <svg class="icon-download" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span>Exportar resultados</span>
+          <p class="ca-field-hint">Al crearlo se generan 3 sesiones de teoría y 1 práctica vacías, listas para redactar.</p>
+
+          <div class="actions">
+            <button type="button" class="ca-btn" (click)="cancelCreateForm()">Cancelar</button>
+            <button type="button" class="ca-btn ca-btn--primary" [disabled]="creating()" (click)="createModule()">
+              {{ creating() ? 'Creando…' : 'Crear módulo' }}
             </button>
           </div>
+        </section>
+      }
+
+      @if (modulesLoading()) {
+        <span class="ca-loader">Cargando módulos…</span>
+      } @else if (modulesError()) {
+        <div class="ca-alert ca-alert--threat" role="alert">
+          <span>{{ modulesError() }}</span>
+          <button type="button" class="ca-btn ca-btn--sm" (click)="loadModules()">Reintentar</button>
         </div>
-
-        @if (overviewLoading()) {
-          <div class="state-box">Cargando resumen…</div>
-        } @else if (overviewError()) {
-          <div class="error-banner">
-            <span>{{ overviewError() }}</span>
-            <button type="button" class="btn-retry" (click)="loadOverview()">Reintentar</button>
-          </div>
-        } @else if (overview(); as data) {
-          <div class="metrics-grid">
-            <div class="metric-card">
-              <div class="metric-number text-navy">{{ data.totalStudents }}</div>
-              <div class="metric-label">Estudiantes registrados</div>
-              <div class="metric-sub">{{ data.activeStudents }} activos</div>
-            </div>
-
-            <div class="metric-card">
-              <div class="metric-number text-emerald">{{ data.studentsCompletedAll }}</div>
-              <div class="metric-label">Completaron todos los módulos</div>
-              <div class="metric-sub">{{ completionRate() }}% del total</div>
-            </div>
-
-            <div class="metric-card">
-              <div class="metric-number text-emerald">{{ formatScore(data.averageScore) }}</div>
-              <div class="metric-label">Nota media</div>
-              <div class="metric-sub">Avance medio {{ data.averageProgress }}%</div>
-            </div>
-
-            <div class="metric-card">
-              <div class="metric-number text-navy">{{ data.totalActiveModules }}</div>
-              <div class="metric-label">Módulos activos</div>
-              <div class="metric-sub">Catálogo actual</div>
-            </div>
-          </div>
-
-          <div class="panels-grid">
-            <div class="panel-card panel-left">
-              <h2 class="panel-title">Estudiantes que completaron cada módulo</h2>
-
-              @if (data.modules.length === 0) {
-                <div class="panel-empty">Todavía no hay módulos activos.</div>
-              } @else {
-                <div class="modules-progress-list">
-                  @for (mod of data.modules; track mod.moduleId) {
-                    <div class="module-row">
-                      <div class="module-name" [title]="mod.code + ' · ' + mod.title">
-                        {{ mod.code }} · {{ mod.title }}
-                      </div>
-
-                      <div class="progress-track">
-                        <div class="progress-fill" [style.width.%]="mod.completionPercent"></div>
-                      </div>
-
-                      <div class="module-percentage">{{ mod.completionPercent }}%</div>
-                      <div class="module-count">{{ mod.completedStudents }}/{{ data.totalStudents }}</div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-
-            <div class="panel-card panel-right">
-              <h2 class="panel-title">Últimas actividades</h2>
-
-              @if (data.recentActivity.length === 0) {
-                <div class="panel-empty">Aún no hay notas registradas.</div>
-              } @else {
-                <div class="activities-list">
-                  @for (act of data.recentActivity; track $index) {
-                    <div class="activity-item">
-                      <div class="activity-head">
-                        <div class="activity-name">{{ act.studentName }}</div>
-                        @if (act.score !== null) {
-                          <span class="activity-score">{{ act.score }} pts</span>
-                        }
-                      </div>
-                      <div class="activity-detail">
-                        {{ act.sectionTitle }} · {{ act.moduleCode }} — {{ relativeTime(act.occurredAt) }}
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          </div>
-        }
-      </div>
-    }
-
-    <!-- PESTAÑA 2: GESTIÓN DE MÓDULOS -->
-    @if (activeTab() === 'modulos') {
-      <div class="content-wrapper">
-        <div class="header-row">
-          <div class="tab-header">
-            <h1 class="page-title">Módulos de capacitación</h1>
-            <p class="page-subtitle">
-              Crea módulos, redacta las 3 teorías y define las preguntas de la práctica.
-            </p>
-          </div>
-
-          <button type="button" class="btn-export" (click)="showCreateForm() ? cancelCreateForm() : openCreateForm()">
-            {{ showCreateForm() ? 'Cancelar' : '+ Nuevo módulo' }}
-          </button>
+      } @else if (realModules().length === 0) {
+        <div class="ca-state">
+          <strong>Todavía no hay módulos</strong>
+          <span>Crea el primero con “Nuevo módulo”.</span>
         </div>
-
-        @if (modulesMessage()) {
-          <div class="admin-message">{{ modulesMessage() }}</div>
-        }
-
-        @if (showCreateForm()) {
-          <div class="form-card">
-            <h2 class="panel-title">Nuevo módulo</h2>
-
-            @if (createError()) {
-              <div class="form-error">{{ createError() }}</div>
-            }
-
-            <div class="form-grid">
-              <label class="form-field">
-                <span>Código</span>
-                <input [(ngModel)]="newModule.code" type="text" maxlength="50" placeholder="MOD-01" />
-              </label>
-
-              <label class="form-field">
-                <span>Título</span>
-                <input [(ngModel)]="newModule.title" type="text" maxlength="150" placeholder="Fundamentos de ciberseguridad" />
-              </label>
-
-              <label class="form-field span-2">
-                <span>Descripción</span>
-                <textarea [(ngModel)]="newModule.description" rows="2" maxlength="2000" placeholder="Descripción breve del módulo"></textarea>
-              </label>
-
-              <label class="form-field">
-                <span>Orden</span>
-                <input [(ngModel)]="newModule.orderIndex" type="number" min="1" />
-              </label>
-
-              <label class="form-field">
-                <span>Nota mínima</span>
-                <input [(ngModel)]="newModule.passingScore" type="number" min="0" max="100" step="0.01" />
-              </label>
-            </div>
-
-            <div class="form-actions">
-              <button type="button" class="btn-modal-cancel" (click)="cancelCreateForm()">Cancelar</button>
-              <button type="button" class="btn-save-score" [disabled]="creating()" (click)="createModule()">
-                {{ creating() ? 'Creando…' : 'Crear módulo' }}
-              </button>
-            </div>
-
-            <p class="form-hint">
-              Al crearlo se generan automáticamente 3 sesiones de teoría y 1 práctica.
-              Después usa “Contenido y preguntas” para redactarlas.
-            </p>
-          </div>
-        }
-
-        @if (modulesLoading()) {
-          <div class="state-box">Cargando módulos…</div>
-        } @else if (modulesError()) {
-          <div class="error-banner">
-            <span>{{ modulesError() }}</span>
-            <button type="button" class="btn-retry" (click)="loadModules()">Reintentar</button>
-          </div>
-        } @else if (realModules().length === 0) {
-          <div class="state-box">
-            <p>Todavía no hay módulos creados.</p>
-            <p class="state-hint">Usa “Nuevo módulo” para crear el primero.</p>
-          </div>
-        } @else {
-          <div class="modules-catalog-grid">
-            @for (m of realModules(); track m.id) {
-              <div class="module-detail-card">
-                <div>
-                  <div class="module-tag-row">
-                    <span class="module-badge">{{ m.code }}</span>
-                    <span class="module-state" [class.inactive]="!m.active">
-                      {{ m.active ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </div>
-
-                  <h3 class="module-detail-title">{{ m.title }}</h3>
-                  <p class="module-detail-category">{{ m.description || 'Sin descripción' }}</p>
-                  <p class="module-meta">
-                    Nota mínima: {{ m.passingScore }} pts · Orden {{ m.orderIndex }}
-                  </p>
-                </div>
-
-                <div class="content-block">
-                  <div class="content-header">
-                    <span>Contenido y evaluación</span>
-                    <span>{{ m.sections.length }} sesiones</span>
-                  </div>
-                  <p class="content-hint">
-                    3 teorías con pregunta de comprensión + 1 práctica tipo cuestionario con un solo intento.
-                  </p>
-                  <button type="button" class="btn-save-score full" (click)="openContentEditor(m)">
-                    Editar contenido y preguntas
-                  </button>
-                </div>
-
-                <div class="module-detail-footer">
-                  <button type="button" class="btn-toggle-active" (click)="toggleActive(m)">
-                    {{ m.active ? 'Desactivar módulo' : 'Activar módulo' }}
-                  </button>
-                </div>
+      } @else {
+        <div class="catalog">
+          @for (m of realModules(); track m.id) {
+            <article class="ca-panel module" [class.is-inactive]="!m.active">
+              <ca-module-cover class="module-cover" [cover]="m.cover" [seed]="m.code" />
+              <div class="module-top">
+                <span class="ca-code">{{ m.code }}</span>
+                <span class="ca-badge" [class.ca-badge--secure]="m.active">{{ m.active ? 'Publicado' : 'Oculto' }}</span>
               </div>
-            }
-          </div>
-        }
-      </div>
-    }
-
-    <!-- PESTAÑA 3: ESTUDIANTES -->
-    @if (activeTab() === 'usuarios') {
-      <div class="content-wrapper">
-        <div class="header-row">
-          <div class="tab-header">
-            <h1 class="page-title">Estudiantes</h1>
-            <p class="page-subtitle">Usuarios registrados y su avance real en los módulos.</p>
-          </div>
-
-          <button type="button" class="btn-export" (click)="exportResults()" [disabled]="students().length === 0">
-            <svg class="icon-download" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span>Exportar resultados</span>
-          </button>
-        </div>
-
-        @if (studentsLoading()) {
-          <div class="state-box">Cargando estudiantes…</div>
-        } @else if (studentsError()) {
-          <div class="error-banner">
-            <span>{{ studentsError() }}</span>
-            <button type="button" class="btn-retry" (click)="loadStudents()">Reintentar</button>
-          </div>
-        } @else if (students().length === 0) {
-          <div class="state-box">
-            <p>Todavía no hay estudiantes registrados.</p>
-            <p class="state-hint">Cuando alguien se registre y verifique su correo aparecerá aquí.</p>
-          </div>
-        } @else {
-          <div class="table-container">
-            <table class="students-table">
-              <thead>
-                <tr>
-                  <th>Estudiante</th>
-                  <th>Correo</th>
-                  <th>Estado</th>
-                  <th class="text-center">Módulos</th>
-                  <th>Avance</th>
-                  <th class="text-right">Nota total</th>
-                  <th class="text-right">Nota media</th>
-                  <th>Última actividad</th>
-                  <th class="text-right">Detalle</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (u of students(); track u.userId) {
-                  <tr>
-                    <td class="font-bold text-dark">{{ fullName(u) }}</td>
-                    <td class="font-mono text-muted">{{ u.email }}</td>
-                    <td>
-                      <span [class]="userStatusClass(u.status)">
-                        <span class="status-dot"></span>
-                        {{ userStatusLabel(u.status) }}
-                      </span>
-                    </td>
-                    <td class="text-center font-mono">{{ u.modulesCompleted }} / {{ u.modulesTotal }}</td>
-                    <td>
-                      <div class="table-progress">
-                        <div class="table-progress-track">
-                          <div class="table-progress-fill" [style.width.%]="u.progressPercent"></div>
-                        </div>
-                        <span class="table-progress-text">{{ u.progressPercent }}%</span>
-                      </div>
-                    </td>
-                    <td class="text-right font-mono">
-                      <span [class]="u.totalScore !== null ? 'score-final' : 'score-diag'">
-                        {{ formatTotal(u) }}
-                      </span>
-                      @if (u.totalScore !== null) {
-                        <div class="score-sub">{{ u.gradedModules }} de {{ u.modulesTotal }} con nota</div>
-                      }
-                    </td>
-                    <td class="text-right font-mono">
-                      <span [class]="u.averageScore !== null ? 'score-final' : 'score-diag'">
-                        {{ formatScore(u.averageScore) }}
-                      </span>
-                    </td>
-                    <td class="text-muted">{{ relativeTime(u.lastActivityAt) }}</td>
-                    <td class="text-right">
-                      <button type="button" class="btn-link" (click)="openStudentDetail(u)">Ver detalle</button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      </div>
-    }
-
-  </main>
-
-  <!-- =========================================================================
-       MODAL: DETALLE DEL ESTUDIANTE
-       ========================================================================= -->
-  @if (selectedStudent(); as student) {
-    <div class="admin-modal-backdrop" (click)="closeStudentDetail()">
-      <div class="admin-modal" (click)="$event.stopPropagation()">
-
-        <div class="admin-modal-header">
-          <div>
-            <span class="modal-eyebrow">Detalle del estudiante</span>
-            <h3 class="admin-modal-title">{{ student.firstName }} {{ student.lastName }}</h3>
-            <p class="admin-modal-subtitle">{{ student.email }}</p>
-          </div>
-          <button type="button" class="modal-close-btn" (click)="closeStudentDetail()">✕</button>
-        </div>
-
-        <div class="admin-modal-body">
-          <div class="detail-stats">
-            <div class="detail-stat">
-              <span class="detail-stat-value">{{ student.modulesCompleted }}/{{ student.modulesTotal }}</span>
-              <span class="detail-stat-label">Módulos completados</span>
-            </div>
-            <div class="detail-stat">
-              <span class="detail-stat-value">{{ student.progressPercent }}%</span>
-              <span class="detail-stat-label">Avance global</span>
-            </div>
-            <div class="detail-stat">
-              <span class="detail-stat-value">{{ formatTotal(student) }}</span>
-              <span class="detail-stat-label">
-                Nota total · {{ student.gradedModules }}/{{ student.modulesTotal }} módulos
-              </span>
-            </div>
-            <div class="detail-stat">
-              <span class="detail-stat-value">{{ formatScore(student.averageScore) }}</span>
-              <span class="detail-stat-label">Nota media</span>
-            </div>
-          </div>
-
-          @if (studentProgressLoading()) {
-            <div class="state-box">Cargando progreso…</div>
-          } @else if (studentProgressError()) {
-            <div class="error-banner">
-              <span>{{ studentProgressError() }}</span>
-              <button type="button" class="btn-retry" (click)="openStudentDetail(student)">Reintentar</button>
-            </div>
-          } @else if (studentProgress(); as modules) {
-            @if (modules.length === 0) {
-              <div class="state-box">
-                <p>Este estudiante aún no tiene módulos disponibles.</p>
+              <h3>{{ m.title }}</h3>
+              <p class="module-desc">{{ m.description || 'Sin descripción' }}</p>
+              <p class="module-meta ca-num">
+                {{ m.sections.length }} sesiones · nota mínima {{ m.passingScore }} pts · orden {{ m.orderIndex }}
+              </p>
+              <div class="module-actions">
+                <button type="button" class="ca-btn ca-btn--sm" (click)="openContentEditor(m)">
+                  <ca-icon name="edit" [size]="16" /> Editar contenido
+                </button>
+                <button type="button" class="ca-btn ca-btn--quiet ca-btn--sm" (click)="toggleActive(m)">
+                  {{ m.active ? 'Ocultar a estudiantes' : 'Publicar' }}
+                </button>
               </div>
-            } @else {
-              <div class="detail-modules">
-                @for (m of modules; track m.moduleId) {
-                  <div class="detail-module">
-                    <div class="detail-module-top">
-                      <div>
-                        <span class="detail-module-code">{{ m.code }}</span>
-                        <span class="detail-module-title">{{ m.title }}</span>
-                      </div>
-                      <span class="detail-badge" [ngClass]="moduleStatusClass(m.status)">
-                        {{ moduleStatusLabel(m.status) }}
-                      </span>
-                    </div>
-
-                    <div class="detail-module-progress">
-                      <div class="table-progress-track">
-                        <div class="table-progress-fill" [style.width.%]="m.progressPercent"></div>
-                      </div>
-                      <span class="table-progress-text">{{ m.progressPercent }}%</span>
-                      <span class="detail-module-score">
-                        {{ m.score !== null ? m.score + ' pts' : 'Sin nota' }}
-                      </span>
-                    </div>
-
-                    <div class="detail-module-meta">
-                      {{ m.completedSections }}/{{ m.totalSections }} secciones · Nota mínima {{ m.passingScore }} pts
-                    </div>
-                  </div>
-                }
-              </div>
-            }
+            </article>
           }
         </div>
+      }
+    }
 
-        <div class="admin-modal-footer">
-          <button type="button" class="btn-modal-cancel" (click)="closeStudentDetail()">Cerrar</button>
+    <!-- Estudiantes -->
+    @if (activeTab() === 'usuarios') {
+      <header class="page-head">
+        <div>
+          <h1>Estudiantes</h1>
+          <p>Usuarios registrados y su avance real en los módulos.</p>
         </div>
+        <button type="button" class="ca-btn" (click)="exportResults()" [disabled]="students().length === 0">
+          <ca-icon name="download" /> Exportar resultados
+        </button>
+      </header>
+
+      @if (studentsLoading()) {
+        <span class="ca-loader">Cargando estudiantes…</span>
+      } @else if (studentsError()) {
+        <div class="ca-alert ca-alert--threat" role="alert">
+          <span>{{ studentsError() }}</span>
+          <button type="button" class="ca-btn ca-btn--sm" (click)="loadStudents()">Reintentar</button>
+        </div>
+      } @else if (students().length === 0) {
+        <div class="ca-state">
+          <strong>Todavía no hay estudiantes</strong>
+          <span>Aparecerán aquí cuando se registren y verifiquen su correo.</span>
+        </div>
+      } @else {
+        <div class="ca-table-wrap">
+          <table class="ca-table">
+            <thead>
+              <tr>
+                <th scope="col">Estudiante</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="num">Módulos</th>
+                <th scope="col">Avance</th>
+                <th scope="col" class="num">Nota total</th>
+                <th scope="col" class="num">Nota media</th>
+                <th scope="col">Última actividad</th>
+                <th scope="col"><span class="ca-sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of students(); track u.userId) {
+                <tr>
+                  <td>
+                    <div class="person">
+                      <strong>{{ fullName(u) }}</strong>
+                      <span>{{ u.email }}</span>
+                    </div>
+                  </td>
+                  <td><span [class]="userStatusClass(u.status)">{{ userStatusLabel(u.status) }}</span></td>
+                  <td class="num ca-num">{{ u.modulesCompleted }}/{{ u.modulesTotal }}</td>
+                  <td>
+                    <div class="inline-meter">
+                      <div class="ca-meter" [style.--value]="u.progressPercent + '%'"><span></span></div>
+                      <span class="ca-num">{{ u.progressPercent }} %</span>
+                    </div>
+                  </td>
+                  <td class="num ca-num">
+                    <span [class.dim]="u.totalScore === null">{{ formatTotal(u) }}</span>
+                    @if (u.totalScore !== null) {
+                      <span class="sub">{{ u.gradedModules }} de {{ u.modulesTotal }} con nota</span>
+                    }
+                  </td>
+                  <td class="num ca-num"><span [class.dim]="u.averageScore === null">{{ formatScore(u.averageScore) }}</span></td>
+                  <td class="dim">{{ relativeTime(u.lastActivityAt) }}</td>
+                  <td class="num"><button type="button" class="ca-link" (click)="openStudentDetail(u)">Ver detalle</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    }
+  </main>
+</div>
+
+<!-- Detalle del estudiante -->
+@if (selectedStudent(); as student) {
+  <div class="ca-backdrop" (click)="closeStudentDetail()">
+    <div class="ca-dialog" role="dialog" aria-modal="true" aria-labelledby="student-title" (click)="$event.stopPropagation()">
+      <div class="ca-dialog-head">
+        <div>
+          <h2 id="student-title">{{ student.firstName }} {{ student.lastName }}</h2>
+          <p class="dim">{{ student.email }}</p>
+        </div>
+        <button type="button" class="ca-icon-btn" (click)="closeStudentDetail()" aria-label="Cerrar detalle">
+          <ca-icon name="close" />
+        </button>
+      </div>
+
+      <div class="ca-dialog-body">
+        <dl class="detail-stats">
+          <div class="ca-stat"><dt class="ca-stat-label">Completados</dt><dd class="ca-stat-value">{{ student.modulesCompleted }}/{{ student.modulesTotal }}</dd></div>
+          <div class="ca-stat"><dt class="ca-stat-label">Avance</dt><dd class="ca-stat-value">{{ student.progressPercent }}%</dd></div>
+          <div class="ca-stat"><dt class="ca-stat-label">Nota total</dt><dd class="ca-stat-value">{{ formatTotal(student) }}</dd></div>
+          <div class="ca-stat"><dt class="ca-stat-label">Nota media</dt><dd class="ca-stat-value">{{ formatScore(student.averageScore) }}</dd></div>
+        </dl>
+
+        @if (studentProgressLoading()) {
+          <span class="ca-loader">Cargando progreso…</span>
+        } @else if (studentProgressError()) {
+          <div class="ca-alert ca-alert--threat" role="alert">
+            <span>{{ studentProgressError() }}</span>
+            <button type="button" class="ca-btn ca-btn--sm" (click)="openStudentDetail(student)">Reintentar</button>
+          </div>
+        } @else if (studentProgress(); as modules) {
+          @if (studentProgressMessage()) {
+            <div class="ca-alert ca-alert--secure" role="status">{{ studentProgressMessage() }}</div>
+          }
+          @if (modules.length === 0) {
+            <div class="ca-state">Este estudiante aún no tiene módulos disponibles.</div>
+          } @else {
+            <ul class="detail-list">
+              @for (m of modules; track m.moduleId) {
+                <li>
+                  <div class="bar-row">
+                    <span><span class="ca-code">{{ m.code }}</span> {{ m.title }}</span>
+                    <span class="ca-badge" [ngClass]="moduleStatusClass(m.status)">{{ moduleStatusLabel(m.status) }}</span>
+                  </div>
+                  <div class="ca-meter" [class.ca-meter--secure]="m.passed" [style.--value]="m.progressPercent + '%'"><span></span></div>
+                  <span class="ca-field-hint ca-num">
+                    {{ m.completedSections }}/{{ m.totalSections }} sesiones ·
+                    {{ m.score !== null ? m.score + ' pts' : 'sin nota' }} · mínimo {{ m.passingScore }} pts ·
+                    intentos {{ m.practiceAttempts }}/{{ m.maxPracticeAttempts }}
+                  </span>
+                  @if (canResetAttempts(m)) {
+                    <div class="reset-row">
+                      @if (confirmResetId() === m.moduleId) {
+                        <span class="ca-field-hint">Se borrará su último intento y tendrá {{ m.maxPracticeAttempts }} nuevos.</span>
+                        <button type="button" class="ca-btn ca-btn--quiet ca-btn--sm" (click)="confirmResetId.set(null)">Cancelar</button>
+                      }
+                      <button type="button" class="ca-btn ca-btn--sm"
+                              [class.ca-btn--primary]="confirmResetId() === m.moduleId"
+                              [disabled]="resettingId() === m.moduleId"
+                              (click)="resetAttempts(student, m)">
+                        {{ resettingId() === m.moduleId ? 'Reanudando…' : (confirmResetId() === m.moduleId ? 'Sí, reanudar' : 'Reanudar intentos') }}
+                      </button>
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        }
       </div>
     </div>
-  }
+  </div>
+}
 
-  <!-- =========================================================================
-       MODAL: CONTENIDO Y PREGUNTAS DEL MÓDULO
-       ========================================================================= -->
-  @if (editingModule(); as module) {
-    <div class="admin-modal-backdrop" (click)="closeContentEditor()">
-      <div class="admin-modal admin-modal-wide" (click)="$event.stopPropagation()">
-
-        <div class="admin-modal-header">
-          <div>
-            <span class="modal-eyebrow">Contenido del módulo</span>
-            <h3 class="admin-modal-title">{{ module.code }} · {{ module.title }}</h3>
-            <p class="admin-modal-subtitle">
-              Redacta las 3 teorías y define las preguntas de la práctica.
-            </p>
-          </div>
-          <button type="button" class="modal-close-btn" (click)="closeContentEditor()">✕</button>
+<!-- Editor de contenido -->
+@if (editingModule(); as module) {
+  <div class="ca-backdrop" (click)="closeContentEditor()">
+    <div class="ca-dialog ca-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="editor-title" (click)="$event.stopPropagation()">
+      <div class="ca-dialog-head">
+        <div>
+          <span class="ca-code">{{ module.code }}</span>
+          <h2 id="editor-title">{{ module.title }}</h2>
         </div>
+        <button type="button" class="ca-icon-btn" (click)="closeContentEditor()" aria-label="Cerrar editor">
+          <ca-icon name="close" />
+        </button>
+      </div>
 
-        <div class="admin-modal-body">
-          @if (editorMessage()) {
-            <div class="admin-message">{{ editorMessage() }}</div>
-          }
-          @if (editorError()) {
-            <div class="form-error">{{ editorError() }}</div>
-          }
+      <div class="ca-dialog-body">
+        @if (editorMessage()) {
+          <div class="ca-alert ca-alert--secure" role="status">{{ editorMessage() }}</div>
+        }
+        @if (editorError()) {
+          <div class="ca-alert ca-alert--threat" role="alert">{{ editorError() }}</div>
+        }
 
-          @if (editorLoading()) {
-            <div class="state-box">Cargando contenido…</div>
-          } @else {
-            @for (draft of editorSections(); track draft.sectionId) {
-              <div class="editor-section">
-                <div class="editor-section-header">
-                  <span class="editor-section-badge" [class.practice]="draft.type === 'PRACTICE'">
-                    {{ draft.type === 'PRACTICE' ? 'Práctica' : 'Teoría ' + draft.order }}
-                  </span>
-                  <h4 class="editor-section-title">
-                    {{ draft.type === 'PRACTICE' ? 'Cuestionario final' : 'Sesión de teoría' }}
-                  </h4>
-                  <span class="editor-section-meta">
-                    {{ draft.questions.length }} pregunta{{ draft.questions.length === 1 ? '' : 's' }}
-                  </span>
-                </div>
+        <ca-cover-picker name="editor-cover" legend="Portada del módulo (se guarda al elegirla)"
+                         [value]="module.cover" [seed]="module.code" [disabled]="savingCover()"
+                         (valueChange)="changeCover(module, $event)" />
 
-                <label class="form-field">
-                  <span>Título de la sesión</span>
-                  <input
-                    type="text"
-                    maxlength="150"
-                    [ngModel]="draft.title"
-                    (ngModelChange)="setEditorTitle(draft.sectionId, $event)" />
+        @if (editorLoading()) {
+          <span class="ca-loader">Cargando contenido…</span>
+        } @else {
+          @for (draft of editorSections(); track draft.sectionId) {
+            <section class="editor" [class.is-practice]="draft.type === 'PRACTICE'">
+              <header class="editor-head">
+                <span class="ca-badge ca-badge--plain" [class.ca-badge--warn]="draft.type === 'PRACTICE'"
+                      [class.ca-badge--signal]="draft.type === 'THEORY'">
+                  {{ draft.type === 'PRACTICE' ? 'Práctica final' : 'Teoría ' + draft.order }}
+                </span>
+                <span class="ca-field-hint ca-num">
+                  {{ draft.questions.length }} pregunta{{ draft.questions.length === 1 ? '' : 's' }}
+                </span>
+              </header>
+
+              <div class="ca-field">
+                <label [for]="'title-' + draft.sectionId">Título de la sesión</label>
+                <input [id]="'title-' + draft.sectionId" class="ca-input" type="text" maxlength="150"
+                       [ngModel]="draft.title" (ngModelChange)="setEditorTitle(draft.sectionId, $event)" />
+              </div>
+
+              <div class="ca-field">
+                <label [for]="'content-' + draft.sectionId">
+                  {{ draft.type === 'PRACTICE' ? 'Instrucciones de la práctica' : 'Contenido de la teoría' }}
                 </label>
+                <textarea [id]="'content-' + draft.sectionId" class="ca-input" rows="7" maxlength="20000"
+                          placeholder="Escribe el material que el estudiante debe leer"
+                          [ngModel]="draft.content" (ngModelChange)="setEditorContent(draft.sectionId, $event)"></textarea>
+              </div>
 
-                <label class="form-field">
-                  <span>
-                    {{ draft.type === 'PRACTICE' ? 'Instrucciones de la práctica' : 'Contenido de la teoría' }}
-                  </span>
-                  <textarea
-                    rows="7"
-                    maxlength="20000"
-                    placeholder="Escribe aquí el material que el estudiante debe leer…"
-                    [ngModel]="draft.content"
-                    (ngModelChange)="setEditorContent(draft.sectionId, $event)"></textarea>
-                </label>
-
-                <div class="editor-questions">
-                  <div class="editor-questions-header">
-                    <span>
-                      {{ draft.type === 'THEORY' ? 'Pregunta de comprensión' : 'Preguntas del cuestionario' }}
-                    </span>
-                    @if (draft.type === 'PRACTICE') {
-                      <button type="button" class="btn-link" (click)="addQuestion(draft.sectionId)">
-                        + Añadir pregunta
+              <div class="questions">
+                @for (question of draft.questions; track $index; let qi = $index) {
+                  <fieldset class="question">
+                    <legend>
+                      {{ draft.type === 'THEORY' ? 'Pregunta de comprensión' : 'Pregunta ' + (qi + 1) }}
+                    </legend>
+                    @if (draft.type === 'PRACTICE' && draft.questions.length > 1) {
+                      <button type="button" class="ca-link ca-link--danger remove-q" (click)="removeQuestion(draft.sectionId, qi)">
+                        Eliminar pregunta
                       </button>
                     }
-                  </div>
 
-                  @for (question of draft.questions; track $index; let qi = $index) {
-                    <div class="editor-question">
-                      <div class="editor-question-top">
-                        <span class="editor-question-number">Pregunta {{ qi + 1 }}</span>
-                        @if (draft.type === 'PRACTICE' && draft.questions.length > 1) {
-                          <button
-                            type="button"
-                            class="btn-link danger"
-                            (click)="removeQuestion(draft.sectionId, qi)">
-                            Eliminar pregunta
-                          </button>
-                        }
-                      </div>
-
-                      <label class="form-field">
-                        <span>Enunciado</span>
-                        <input
-                          type="text"
-                          maxlength="2000"
-                          placeholder="¿Cuál de estos correos es malicioso?"
-                          [ngModel]="question.prompt"
-                          (ngModelChange)="setQuestionPrompt(draft.sectionId, qi, $event)" />
-                      </label>
-
-                      <div class="editor-options">
-                        @for (option of question.options; track $index; let oi = $index) {
-                          <div class="editor-option">
-                            <input
-                              type="radio"
-                              [name]="'correct-' + draft.sectionId + '-' + qi"
-                              [checked]="option.correct"
-                              (change)="setCorrectOption(draft.sectionId, qi, oi)" />
-                            <input
-                              class="option-text"
-                              type="text"
-                              maxlength="500"
-                              [placeholder]="'Opción ' + (oi + 1)"
-                              [ngModel]="option.text"
-                              (ngModelChange)="setOptionText(draft.sectionId, qi, oi, $event)" />
-                            @if (question.options.length > 2) {
-                              <button
-                                type="button"
-                                class="btn-link danger"
-                                (click)="removeOption(draft.sectionId, qi, oi)">
-                                ✕
-                              </button>
-                            }
-                          </div>
-                        }
-
-                        @if (question.options.length < 6) {
-                          <button type="button" class="btn-link" (click)="addOption(draft.sectionId, qi)">
-                            + Añadir opción
-                          </button>
-                        }
-                      </div>
-
-                      <p class="editor-hint">
-                        Marca con el círculo la opción correcta. Debe haber exactamente una.
-                      </p>
+                    <div class="ca-field">
+                      <label [for]="'prompt-' + draft.sectionId + '-' + qi">Enunciado</label>
+                      <input [id]="'prompt-' + draft.sectionId + '-' + qi" class="ca-input" type="text" maxlength="2000"
+                             placeholder="¿Cuál de estos correos es malicioso?"
+                             [ngModel]="question.prompt" (ngModelChange)="setQuestionPrompt(draft.sectionId, qi, $event)" />
                     </div>
-                  }
-                </div>
 
-                <div class="form-actions">
-                  <button
-                    type="button"
-                    class="btn-save-score"
-                    [disabled]="savingSectionId() === draft.sectionId"
-                    (click)="saveSection(draft)">
-                    {{ savingSectionId() === draft.sectionId ? 'Guardando…' : 'Guardar sesión' }}
+                    <div class="options" role="radiogroup" [attr.aria-label]="'Opción correcta de la pregunta ' + (qi + 1)">
+                      @for (option of question.options; track $index; let oi = $index) {
+                        <div class="option" [class.is-correct]="option.correct">
+                          <input type="radio" [name]="'correct-' + draft.sectionId + '-' + qi"
+                                 [checked]="option.correct" (change)="setCorrectOption(draft.sectionId, qi, oi)"
+                                 [attr.aria-label]="'Marcar opción ' + (oi + 1) + ' como correcta'" />
+                          <input class="ca-input" type="text" maxlength="500" [placeholder]="'Opción ' + (oi + 1)"
+                                 [ngModel]="option.text" (ngModelChange)="setOptionText(draft.sectionId, qi, oi, $event)" />
+                          @if (question.options.length > 2) {
+                            <button type="button" class="ca-icon-btn" (click)="removeOption(draft.sectionId, qi, oi)"
+                                    [attr.aria-label]="'Eliminar opción ' + (oi + 1)">
+                              <ca-icon name="trash" [size]="16" />
+                            </button>
+                          }
+                          <input class="ca-input option-feedback" type="text" maxlength="1000"
+                                 [placeholder]="option.correct ? 'Por qué es la correcta (opcional)' : 'Por qué es un error (opcional)'"
+                                 [attr.aria-label]="'Retroalimentación de la opción ' + (oi + 1)"
+                                 [ngModel]="option.feedback" (ngModelChange)="setOptionFeedback(draft.sectionId, qi, oi, $event)" />
+                        </div>
+                      }
+                    </div>
+
+                    <div class="ca-field">
+                      <label [for]="'explanation-' + draft.sectionId + '-' + qi">Explicación (opcional)</label>
+                      <textarea [id]="'explanation-' + draft.sectionId + '-' + qi" class="ca-input explanation" maxlength="2000" rows="3"
+                                placeholder="Qué pasó, por qué es riesgoso y cómo evitarlo. El estudiante la ve al resolver la pregunta."
+                                [ngModel]="question.explanation"
+                                (ngModelChange)="setQuestionExplanation(draft.sectionId, qi, $event)"></textarea>
+                    </div>
+
+                    <div class="question-foot">
+                      <span class="ca-field-hint">Marca la opción correcta. Debe haber exactamente una.</span>
+                      @if (question.options.length < 6) {
+                        <button type="button" class="ca-link" (click)="addOption(draft.sectionId, qi)">Añadir opción</button>
+                      }
+                    </div>
+                  </fieldset>
+                }
+
+                @if (draft.type === 'PRACTICE') {
+                  <button type="button" class="ca-btn ca-btn--sm add-q" (click)="addQuestion(draft.sectionId)">
+                    <ca-icon name="plus" [size]="16" /> Añadir pregunta
                   </button>
-                </div>
+                }
               </div>
-            }
-          }
-        </div>
 
-        <div class="admin-modal-footer">
-          <button type="button" class="btn-modal-cancel" (click)="closeContentEditor()">Cerrar</button>
-        </div>
+              <div class="actions">
+                <button type="button" class="ca-btn ca-btn--primary" [disabled]="savingSectionId() === draft.sectionId"
+                        (click)="saveSection(draft)">
+                  {{ savingSectionId() === draft.sectionId ? 'Guardando…' : 'Guardar sesión' }}
+                </button>
+              </div>
+            </section>
+          }
+        }
       </div>
     </div>
-  }
-
-</div>
+  </div>
+}

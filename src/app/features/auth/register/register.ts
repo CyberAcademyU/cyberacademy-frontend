@@ -2,14 +2,15 @@ import { Component, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, AuthShellComponent],
   templateUrl: './register.html',
-  styleUrl: './register.css'
+  styleUrl: '../login/login.css'
 })
 export class RegisterComponent {
   registerForm: FormGroup;
