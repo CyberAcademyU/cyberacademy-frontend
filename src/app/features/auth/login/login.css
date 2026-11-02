@@ -118,3 +118,20 @@
     grid-template-columns: 1fr;
   }
 }
+.password-input { position: relative; width: 100%; }
+.password-input .ca-input { width: 100%; padding-right: 3.25rem; }
+.password-input .ca-input::-ms-reveal { display: none; }
+.password-reveal {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--ca-text-dim);
+  cursor: pointer;
+  touch-action: none;
+}
+.password-reveal:hover { color: var(--ca-signal); }
+.password-reveal:focus-visible { outline: 2px solid var(--ca-signal); outline-offset: -3px; }

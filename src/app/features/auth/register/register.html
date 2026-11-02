@@ -29,15 +29,21 @@
 
     <div class="ca-field">
       <label for="password">Contraseña</label>
-      <input id="password" class="ca-input" type="password" formControlName="password"
-             autocomplete="new-password" aria-describedby="password-hint" />
+      <div class="password-input">
+        <input #registerPassword id="password" class="ca-input" type="password" formControlName="password"
+               autocomplete="new-password" aria-describedby="password-hint" />
+        <button type="button" class="password-reveal" [caRevealPassword]="registerPassword"><ca-icon name="eye" [size]="20" /></button>
+      </div>
       <span id="password-hint" class="ca-field-hint">Mínimo 8 caracteres.</span>
     </div>
 
     <div class="ca-field">
       <label for="confirmPassword">Repite la contraseña</label>
-      <input id="confirmPassword" class="ca-input" type="password" formControlName="confirmPassword"
-             autocomplete="new-password" />
+      <div class="password-input">
+        <input #confirmPassword id="confirmPassword" class="ca-input" type="password" formControlName="confirmPassword"
+               autocomplete="new-password" />
+        <button type="button" class="password-reveal" [caRevealPassword]="confirmPassword"><ca-icon name="eye" [size]="20" /></button>
+      </div>
     </div>
 
     <button type="submit" class="ca-btn ca-btn--primary ca-btn--block" [disabled]="registerForm.invalid || isLoading()">
