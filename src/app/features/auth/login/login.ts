@@ -5,11 +5,12 @@ import { AuthService } from '../../../core/services/auth';
 import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { IconComponent } from '../../../shared/ui/icon';
+import { RevealPasswordDirective } from '../../../shared/ui/reveal-password';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, AuthShellComponent, IconComponent],
+  imports: [ReactiveFormsModule, AuthShellComponent, IconComponent, RevealPasswordDirective],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
@@ -20,11 +21,13 @@ export class LoginComponent implements OnDestroy {
   registerError = signal<string | null>(null);
   otpError = signal<string | null>(null);
   verifiedSuccess = signal(false);
+  passwordChanged = signal(false);
 
   pendingEmail = signal<string>('');
   otpDigits = ['', '', '', '', '', ''];
   cooldownSeconds = signal(60);
   private timer: ReturnType<typeof setInterval> | null = null;
+  private passwordChangedTimer: ReturnType<typeof setTimeout> | null = null;
 
   loginForm: FormGroup;
   registerForm: FormGroup;
@@ -34,6 +37,10 @@ export class LoginComponent implements OnDestroy {
     private authService: AuthService,
     private router: Router
   ) {
+    this.passwordChanged.set(this.router.getCurrentNavigation()?.extras.state?.['passwordChanged'] === true);
+    if (this.passwordChanged()) {
+      this.passwordChangedTimer = setTimeout(() => this.passwordChanged.set(false), 10_000);
+    }
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
@@ -52,6 +59,7 @@ export class LoginComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     if (this.timer) clearInterval(this.timer);
+    if (this.passwordChangedTimer) clearTimeout(this.passwordChangedTimer);
   }
 
   setMode(mode: 'login' | 'register' | 'verify-otp'): void {

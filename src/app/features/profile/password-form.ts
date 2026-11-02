@@ -14,12 +14,6 @@ import { passwordMatchValidator } from '../../shared/validators/password-match.v
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule],
   template: `
-    @if (done()) {
-      <div class="ca-alert ca-alert--secure" role="status">
-        Contraseña actualizada. Cerramos tus sesiones abiertas; inicia sesión con la nueva contraseña.
-      </div>
-      <button type="button" class="ca-btn ca-btn--primary" (click)="goToLogin()">Iniciar sesión</button>
-    } @else {
       <form class="form" [formGroup]="form" (ngSubmit)="submit()">
         <!-- Ayuda a los gestores de contraseñas a asociar la nueva clave con la cuenta -->
         <input type="email" autocomplete="username" [value]="email()" class="ca-sr-only" tabindex="-1" aria-hidden="true" readonly />
@@ -56,7 +50,6 @@ import { passwordMatchValidator } from '../../shared/validators/password-match.v
           {{ sending() ? 'Actualizando…' : 'Cambiar contraseña' }}
         </button>
       </form>
-    }
   `,
   styles: `
     :host { display: grid; gap: var(--ca-space-4); justify-items: start; }
@@ -73,7 +66,6 @@ export class PasswordFormComponent {
   protected email = signal(this.auth.currentUserSignal()?.email ?? '');
   protected sending = signal(false);
   protected error = signal<string | null>(null);
-  protected done = signal(false);
 
   protected form = this.fb.nonNullable.group(
     {
@@ -97,9 +89,9 @@ export class PasswordFormComponent {
       next: () => {
         this.sending.set(false);
         this.form.reset();
-        this.done.set(true);
         // El token actual ya está revocado en el servidor: no tiene sentido llamar a /logout
         this.auth.clearSession();
+        void this.router.navigate(['/auth/login'], { state: { passwordChanged: true }, replaceUrl: true });
       },
       error: err => {
         this.sending.set(false);
@@ -108,9 +100,5 @@ export class PasswordFormComponent {
           : err?.error?.message || 'No se pudo cambiar la contraseña.');
       }
     });
-  }
-
-  goToLogin(): void {
-    void this.router.navigate(['/auth/login']);
   }
 }
