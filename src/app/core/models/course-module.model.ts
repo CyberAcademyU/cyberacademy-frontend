@@ -40,6 +40,7 @@ export interface ModuleSummary {
   completedAt: string | null;
   lastActivityAt: string | null;
   saved: boolean;
+  locked: boolean;
   /** Intentos usados en la práctica; al llegar al máximo se cierra hasta que el admin los reanude. */
   practiceAttempts: number;
   maxPracticeAttempts: number;

@@ -355,20 +355,6 @@
                     {{ m.score !== null ? m.score + ' pts' : 'sin nota' }} · mínimo {{ m.passingScore }} pts ·
                     intentos {{ m.practiceAttempts }}/{{ m.maxPracticeAttempts }}
                   </span>
-                  @if (canResetAttempts(m)) {
-                    <div class="reset-row">
-                      @if (confirmResetId() === m.moduleId) {
-                        <span class="ca-field-hint">Se borrará su último intento y tendrá {{ m.maxPracticeAttempts }} nuevos.</span>
-                        <button type="button" class="ca-btn ca-btn--quiet ca-btn--sm" (click)="confirmResetId.set(null)">Cancelar</button>
-                      }
-                      <button type="button" class="ca-btn ca-btn--sm"
-                              [class.ca-btn--primary]="confirmResetId() === m.moduleId"
-                              [disabled]="resettingId() === m.moduleId"
-                              (click)="resetAttempts(student, m)">
-                        {{ resettingId() === m.moduleId ? 'Reanudando…' : (confirmResetId() === m.moduleId ? 'Sí, reanudar' : 'Reanudar intentos') }}
-                      </button>
-                    </div>
-                  }
                 </li>
               }
             </ul>
