@@ -299,11 +299,7 @@
                   <div class="ca-state">La práctica todavía no tiene preguntas. Vuelve más tarde.</div>
                 } @else {
                   <div class="ca-alert ca-alert--warn">
-                    @if (attemptsLeft(progress) === 1) {
-                      Es tu último intento: si no llegas a la nota mínima, el módulo quedará cerrado hasta que el administrador reanude tus intentos.
-                    } @else {
-                      Tienes {{ attemptsLeft(progress) }} intentos. Al enviarla se corrige al momento; si no llegas a la nota mínima, podrás repasar qué fallaste y volver a intentarlo.
-                    }
+                    La práctica tiene un solo intento. Al enviarla terminarás el módulo y podrás avanzar al siguiente, independientemente de tu nota.
                   </div>
 
                   @for (question of content.questions; track question.id; let qi = $index) {
@@ -352,15 +348,7 @@
                 <h3>{{ progress.summary.passed ? 'Módulo aprobado' : 'Módulo no aprobado' }}</h3>
                 <p>
                   La nota mínima era {{ progress.summary.passingScore }} pts.
-                  @if (progress.summary.passed) {
-                    Este módulo cuenta para tu avance total.
-                  } @else if (attemptsLeft(progress) > 0) {
-                    {{ attemptsLeft(progress) === 1 ? 'Te queda 1 intento.' : 'Te quedan ' + attemptsLeft(progress) + ' intentos.' }}
-                    Repasa qué fallaste y vuelve a intentarlo.
-                  } @else {
-                    Usaste los {{ progress.summary.maxPracticeAttempts }} intentos. Revisa la corrección completa; si necesitas
-                    volver a presentarla, pide al administrador que reanude tus intentos.
-                  }
+                  Terminaste este módulo y puedes continuar con el siguiente disponible.
                 </p>
               </div>
             </div>
@@ -371,12 +359,6 @@
                   <h3 id="review-title">Corrección de la práctica</h3>
                   <span class="ca-num review-count">{{ review.correctCount }} de {{ review.totalQuestions }} correctas</span>
                 </header>
-                @if (!review.passed && attemptsLeft(progress) > 0) {
-                  <p class="review-note">
-                    Como puedes reintentarla, aquí solo ves qué preguntas fallaste y por qué tu respuesta no era la
-                    correcta. La respuesta correcta y la explicación completa aparecen cuando apruebes.
-                  </p>
-                }
                 @for (q of review.questions; track q.id; let qi = $index) {
                   <article class="review-item" [class.is-right]="q.correct" [class.is-wrong]="!q.correct">
                     <p class="review-q">
@@ -413,12 +395,6 @@
                 <button type="button" class="ca-btn" [disabled]="loadingReview()"
                         (click)="loadPracticeReview(progress.summary.moduleId)">
                   {{ loadingReview() ? 'Cargando corrección…' : 'Ver corrección' }}
-                </button>
-              }
-              @if (!progress.summary.passed && attemptsLeft(progress) > 0) {
-                <button type="button" class="ca-btn ca-btn--primary" [disabled]="loadingSection()"
-                        (click)="retryPractice(progress)">
-                  Reintentar práctica
                 </button>
               }
             </div>

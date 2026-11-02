@@ -12,7 +12,7 @@ import { ModuleCoverComponent } from '../../../shared/ui/module-cover';
   selector: 'app-module-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CircuitTrackComponent, IconComponent, ModuleCoverComponent],
-  host: { '[class.is-next]': 'next()' },
+  host: { '[class.is-next]': 'next()', '[class.is-locked]': 'module().locked' },
   template: `
     <ca-module-cover class="cover" [cover]="module().cover" [seed]="module().code" />
     <div class="top">
@@ -27,9 +27,10 @@ import { ModuleCoverComponent } from '../../../shared/ui/module-cover';
     </div>
 
     <h3 class="title">
-      <button type="button" class="open" (click)="open.emit()">{{ module().title }}</button>
+      <button type="button" class="open" [disabled]="module().locked" (click)="open.emit()">{{ module().title }}</button>
     </h3>
     <p class="desc">{{ module().description || 'Módulo de ciberseguridad' }}</p>
+    @if (module().locked) { <p class="locked-message"><ca-icon name="lock" [size]="16" /> Termina los módulos anteriores para desbloquearlo.</p> }
 
     <ca-circuit-track class="track" [steps]="steps()" [compact]="true" />
 
@@ -54,6 +55,9 @@ import { ModuleCoverComponent } from '../../../shared/ui/module-cover';
     :host(:has(.open:hover)) { border-color: var(--ca-line-strong); background: var(--ca-raised); }
     :host(:has(.open:focus-visible)) { box-shadow: var(--ca-focus); }
     :host(.is-next) { border-color: rgb(var(--ca-signal-rgb) / 0.45); }
+    :host(.is-locked) { opacity: 0.75; }
+    .locked-message { display: flex; gap: var(--ca-space-2); align-items: center; color: var(--ca-text-dim); font-size: var(--ca-text-xs); }
+    .open:disabled { cursor: not-allowed; }
     .cover {
       aspect-ratio: 16 / 7;
       margin: 0 calc(var(--ca-space-2) * -1) var(--ca-space-1);
@@ -118,6 +122,7 @@ export class ModuleCardComponent {
   toggleSave = output<void>();
 
   protected statusClass = computed(() => {
+    if (this.module().locked) return '';
     switch (this.module().status) {
       case 'COMPLETED': return 'ca-badge--secure';
       case 'IN_PROGRESS': return 'ca-badge--warn';
@@ -128,12 +133,10 @@ export class ModuleCardComponent {
 
   protected label = computed(() => {
     const m = this.module();
+    if (m.locked) return 'Bloqueado';
     if (m.status === 'COMPLETED') return `Aprobado con ${m.score ?? m.progressPercent} pts`;
     if (m.status === 'FAILED') {
-      const left = m.maxPracticeAttempts - m.practiceAttempts;
-      return left > 0
-        ? `No aprobado · ${m.score ?? 0} pts · ${left === 1 ? '1 intento' : `${left} intentos`}`
-        : `No aprobado · ${m.score ?? 0} pts · sin intentos`;
+      return `No aprobado · ${m.score ?? 0} pts`;
     }
     if (m.status === 'IN_PROGRESS') return `En curso, ${m.progressPercent} %`;
     return 'Sin empezar';
@@ -146,6 +149,7 @@ export class ModuleCardComponent {
     return Array.from({ length: m.totalSections }, (_, i) => {
       const final = i === m.totalSections - 1;
       const label = final ? 'Práctica' : `Teoría ${i + 1}`;
+      if (m.locked) return { label, final, state: 'locked' };
       if (final && m.status === 'FAILED') return { label, final, state: 'failed' };
       if (i < m.completedSections) return { label, final, state: 'done' };
       if (i === m.completedSections && !finished) return { label, final, state: 'current' };
