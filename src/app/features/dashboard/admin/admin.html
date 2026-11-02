@@ -418,8 +418,30 @@
                 </label>
                 <textarea [id]="'content-' + draft.sectionId" class="ca-input" rows="7" maxlength="20000"
                           placeholder="Escribe el material que el estudiante debe leer"
-                          [ngModel]="draft.content" (ngModelChange)="setEditorContent(draft.sectionId, $event)"></textarea>
+                  [ngModel]="draft.content" (ngModelChange)="setEditorContent(draft.sectionId, $event)"></textarea>
               </div>
+
+              @if (draft.type === 'THEORY') {
+                <fieldset class="question">
+                  <legend>Recursos de la teoría (opcionales)</legend>
+                  <p class="ca-field-hint">Agrega enlaces HTTPS a dos imágenes y un video. Se aceptan videos de YouTube, archivos MP4 o WebM y otros enlaces externos.</p>
+                  <div class="ca-field">
+                    <label [for]="'image-1-' + draft.sectionId">Enlace de la primera imagen</label>
+                    <input [id]="'image-1-' + draft.sectionId" class="ca-input" type="url" maxlength="2048" placeholder="https://..."
+                           [ngModel]="draft.imageUrl1" (ngModelChange)="setMediaUrl(draft.sectionId, 'imageUrl1', $event)" />
+                  </div>
+                  <div class="ca-field">
+                    <label [for]="'image-2-' + draft.sectionId">Enlace de la segunda imagen</label>
+                    <input [id]="'image-2-' + draft.sectionId" class="ca-input" type="url" maxlength="2048" placeholder="https://..."
+                           [ngModel]="draft.imageUrl2" (ngModelChange)="setMediaUrl(draft.sectionId, 'imageUrl2', $event)" />
+                  </div>
+                  <div class="ca-field">
+                    <label [for]="'video-' + draft.sectionId">Enlace del video</label>
+                    <input [id]="'video-' + draft.sectionId" class="ca-input" type="url" maxlength="2048" placeholder="https://..."
+                           [ngModel]="draft.videoUrl" (ngModelChange)="setMediaUrl(draft.sectionId, 'videoUrl', $event)" />
+                  </div>
+                </fieldset>
+              }
 
               <div class="questions">
                 @for (question of draft.questions; track $index; let qi = $index) {

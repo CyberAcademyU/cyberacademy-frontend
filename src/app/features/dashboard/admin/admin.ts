@@ -39,6 +39,9 @@ interface SectionDraft {
   order: number;
   title: string;
   content: string;
+  imageUrl1: string;
+  imageUrl2: string;
+  videoUrl: string;
   questions: QuestionDraft[];
 }
 
@@ -361,6 +364,10 @@ export class AdminDashboardComponent implements OnInit {
     this.updateSection(sectionId, (draft) => ({ ...draft, content: value }));
   }
 
+  setMediaUrl(sectionId: string, field: 'imageUrl1' | 'imageUrl2' | 'videoUrl', value: string): void {
+    this.updateSection(sectionId, draft => ({ ...draft, [field]: value }));
+  }
+
   setQuestionPrompt(sectionId: string, questionIndex: number, value: string): void {
     this.updateSection(sectionId, (draft) => ({
       ...draft,
@@ -478,6 +485,9 @@ export class AdminDashboardComponent implements OnInit {
     const request = {
       title: draft.title.trim(),
       content: draft.content.trim(),
+      imageUrl1: draft.imageUrl1.trim() || null,
+      imageUrl2: draft.imageUrl2.trim() || null,
+      videoUrl: draft.videoUrl.trim() || null,
       questions: draft.questions.map((question) => ({
         prompt: question.prompt.trim(),
         explanation: question.explanation.trim() || null,
@@ -697,6 +707,9 @@ export class AdminDashboardComponent implements OnInit {
       order: section.order,
       title: section.title,
       content: section.content ?? '',
+      imageUrl1: section.imageUrl1 ?? '',
+      imageUrl2: section.imageUrl2 ?? '',
+      videoUrl: section.videoUrl ?? '',
       questions
     };
   }
@@ -715,6 +728,15 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   private validateDraft(draft: SectionDraft): string | null {
+    for (const value of [draft.imageUrl1, draft.imageUrl2, draft.videoUrl]) {
+      if (!value.trim()) continue;
+      try {
+        const url = new URL(value.trim());
+        if (url.protocol !== 'https:' || !url.hostname || url.username || url.password || value.trim().length > 2048) throw new Error();
+      } catch {
+        return 'Los enlaces de imágenes y video deben ser URL HTTPS válidas de hasta 2048 caracteres.';
+      }
+    }
     if (!draft.title.trim()) {
       return 'El título de la sesión es obligatorio.';
     }

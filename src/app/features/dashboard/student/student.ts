@@ -23,6 +23,7 @@ import { AppHeaderComponent } from '../../../shared/ui/app-header';
 import { LeagueEmblemComponent } from '../../../shared/ui/league-emblem';
 import { BadgeMedalComponent } from '../../../shared/ui/badge-medal';
 import { ModuleCardComponent } from './module-card';
+import { TheoryMediaComponent } from './theory-media';
 
 interface ActionMessage {
   text: string;
@@ -46,7 +47,8 @@ const RECENT_LIMIT = 6;
     AppHeaderComponent,
     LeagueEmblemComponent,
     BadgeMedalComponent,
-    ModuleCardComponent
+    ModuleCardComponent,
+    TheoryMediaComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'onEscape()' },
