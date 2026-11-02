@@ -1,6 +1,6 @@
 import { Component, signal, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
@@ -10,7 +10,7 @@ import { RevealPasswordDirective } from '../../../shared/ui/reveal-password';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, AuthShellComponent, IconComponent, RevealPasswordDirective],
+  imports: [ReactiveFormsModule, AuthShellComponent, IconComponent, RevealPasswordDirective, RouterLink],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
