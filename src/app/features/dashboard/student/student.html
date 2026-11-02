@@ -236,9 +236,12 @@
                 <h3>{{ content.title }}</h3>
               </header>
 
-              @if (content.content) {
-                <div class="lesson-text">{{ content.content }}</div>
-              }
+                @if (content.content) {
+                  <div class="lesson-text">{{ content.content }}</div>
+                }
+                @if (content.type === 'THEORY') {
+                  <app-theory-media [title]="content.title" [imageUrl1]="content.imageUrl1" [imageUrl2]="content.imageUrl2" [videoUrl]="content.videoUrl" />
+                }
 
               @if (content.type === 'THEORY') {
                 @if (content.questions[0]; as question) {

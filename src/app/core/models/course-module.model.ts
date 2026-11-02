@@ -106,6 +106,9 @@ export interface SectionContent {
   order: number;
   title: string;
   content: string | null;
+  imageUrl1: string | null;
+  imageUrl2: string | null;
+  videoUrl: string | null;
   status: ProgressStatus;
   accessible: boolean;
   questions: QuizQuestion[];
@@ -188,6 +191,9 @@ export interface AdminSectionContent {
   order: number;
   title: string;
   content: string | null;
+  imageUrl1: string | null;
+  imageUrl2: string | null;
+  videoUrl: string | null;
   questions: AdminQuestion[];
 }
 
@@ -206,5 +212,8 @@ export interface SaveQuestionRequest {
 export interface SaveSectionContentRequest {
   title: string;
   content: string;
+  imageUrl1?: string | null;
+  imageUrl2?: string | null;
+  videoUrl?: string | null;
   questions: SaveQuestionRequest[];
 }
