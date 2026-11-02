@@ -52,6 +52,14 @@ export class AuthService {
     );
   }
 
+  requestPasswordReset(email: string): Observable<ApiResponse<void>> {
+    return this.http.post<ApiResponse<void>>(`${this.apiUrl}/auth/password-reset/request`, { email });
+  }
+
+  confirmPasswordReset(email: string, code: string, newPassword: string): Observable<ApiResponse<void>> {
+    return this.http.post<ApiResponse<void>>(`${this.apiUrl}/auth/password-reset/confirm`, { email, code, newPassword });
+  }
+
   logout(): void {
     this.sessionEnding.next();
     if (!this.tokenSignal()) { this.clearSession(); return; }

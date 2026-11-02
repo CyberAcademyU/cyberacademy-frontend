@@ -34,6 +34,7 @@
         </div>
       </div>
 
+      <a routerLink="/auth/recuperar-contrasena" class="ca-link">¿Olvidaste tu contraseña?</a>
       <button type="submit" class="ca-btn ca-btn--primary ca-btn--block" [disabled]="loginForm.invalid || isLoading()">
         {{ isLoading() ? 'Iniciando sesión…' : 'Iniciar sesión' }}
       </button>
