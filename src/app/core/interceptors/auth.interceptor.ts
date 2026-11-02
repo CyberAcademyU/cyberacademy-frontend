@@ -10,10 +10,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const target = new URL(req.url, window.location.origin);
   const apiPath = api.pathname.replace(/\/$/, '');
   const isApi = target.origin === api.origin && (target.pathname === apiPath || target.pathname.startsWith(apiPath + '/'));
+  const isLogin = isApi && target.pathname === `${apiPath}/auth/login`;
   const token = authService.isAuthenticated() ? authService.tokenSignal() : null;
   const request = isApi && token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
   return next(request).pipe(catchError((error: unknown) => {
-    if (isApi && error instanceof HttpErrorResponse && error.status === 401) {
+    if (isApi && !isLogin && error instanceof HttpErrorResponse && error.status === 401) {
       authService.handleUnauthorized();
     }
     return throwError(() => error);

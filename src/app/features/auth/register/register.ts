@@ -4,11 +4,13 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
+import { IconComponent } from '../../../shared/ui/icon';
+import { RevealPasswordDirective } from '../../../shared/ui/reveal-password';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, AuthShellComponent],
+  imports: [ReactiveFormsModule, RouterLink, AuthShellComponent, IconComponent, RevealPasswordDirective],
   templateUrl: './register.html',
   styleUrl: '../login/login.css'
 })
