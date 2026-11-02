@@ -1,35 +1,64 @@
-import { Component, OnInit, OnDestroy, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, OnInit, OnDestroy, afterNextRender, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ModuleStreamService } from '../../../core/services/module-stream';
 import { AuthService } from '../../../core/services/auth';
 import { ModulesService } from '../../../core/services/modules';
 import {
+  CheckAnswerResponse,
   ModuleProgress,
   ModuleSummary,
+  PracticeReview,
   ProgressStatus,
   SectionContent,
   SectionProgress
 } from '../../../core/models/course-module.model';
+import { ProfileService } from '../../../core/services/profile';
+import { ModuleCoverComponent } from '../../../shared/ui/module-cover';
+import { IconComponent } from '../../../shared/ui/icon';
+import { CircuitStep, CircuitTrackComponent } from '../../../shared/ui/circuit-track';
+import { ProgressRingComponent } from '../../../shared/ui/progress-ring';
+import { AppHeaderComponent } from '../../../shared/ui/app-header';
+import { LeagueEmblemComponent } from '../../../shared/ui/league-emblem';
+import { BadgeMedalComponent } from '../../../shared/ui/badge-medal';
+import { ModuleCardComponent } from './module-card';
 
 interface ActionMessage {
   text: string;
   type: 'success' | 'error';
 }
 
+export type LearningTab = 'current' | 'recent' | 'saved';
+
+const RECENT_LIMIT = 6;
+
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule,
+    RouterLink,
+    IconComponent,
+    CircuitTrackComponent,
+    ModuleCoverComponent,
+    ProgressRingComponent,
+    AppHeaderComponent,
+    LeagueEmblemComponent,
+    BadgeMedalComponent,
+    ModuleCardComponent
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'onEscape()' },
   templateUrl: './student.html',
   styleUrl: './student.css'
 })
 export class StudentDashboardComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private modulesService = inject(ModulesService);
-  private router = inject(Router);
+  private profileService = inject(ProfileService);
   private moduleStream = inject(ModuleStreamService);
+  private injector = inject(Injector);
   private streamSubscription?: Subscription;
 
   user = this.authService.currentUserSignal;
@@ -52,13 +81,57 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   // Pregunta de comprensión de la teoría
   theorySelection = signal<string | null>(null);
   checking = signal(false);
+  /** Retroalimentación de la última respuesta: qué pasó con la opción elegida y la lección. */
+  theoryFeedback = signal<CheckAnswerResponse | null>(null);
 
-  // Práctica (un solo intento)
+  // Práctica (se puede reintentar mientras no esté aprobada)
   practiceAnswers = signal<Record<string, string>>({});
   submittingPractice = signal(false);
+  confirmingPractice = signal(false);
+
+  // Corrección de la práctica (solo después de enviarla)
+  practiceReview = signal<PracticeReview | null>(null);
+  loadingReview = signal(false);
 
   // Resultados
   showResultsModal = signal(false);
+
+  // Mi aprendizaje
+  learningTab = signal<LearningTab>('current');
+  savingIds = signal<ReadonlySet<string>>(new Set());
+  saveError = signal<string | null>(null);
+
+  currentModules = computed(() => this.summaries().filter(m => m.status === 'IN_PROGRESS'));
+
+  recentModules = computed(() =>
+    this.summaries()
+      .filter(m => m.lastActivityAt)
+      .sort((a, b) => b.lastActivityAt!.localeCompare(a.lastActivityAt!))
+      .slice(0, RECENT_LIMIT)
+  );
+
+  savedModules = computed(() => this.summaries().filter(m => m.saved));
+
+  learningModules = computed(() => {
+    switch (this.learningTab()) {
+      case 'recent': return this.recentModules();
+      case 'saved': return this.savedModules();
+      default: return this.currentModules();
+    }
+  });
+
+  // Liga e insignias (vienen del perfil)
+  profile = this.profileService.profile;
+  earnedBadges = computed(() => this.profile()?.badges.filter(b => b.earned).length ?? 0);
+
+  /** Avance dentro de la liga actual hacia la siguiente (100 en la última). */
+  leagueProgress = computed(() => {
+    const p = this.profile();
+    if (!p) return 0;
+    const { minXp, nextMinXp } = p.league;
+    if (nextMinXp === null) return 100;
+    return Math.min(100, Math.round(((p.xp - minXp) / (nextMinXp - minXp)) * 100));
+  });
 
   completedCount = computed(() => this.summaries().filter(m => m.status === 'COMPLETED').length);
 
@@ -76,6 +149,13 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     return Math.round((total / list.length) * 10) / 10;
   });
 
+  /** Primer módulo sin terminar, en el orden del catálogo: es lo que el estudiante debería hacer ahora. */
+  nextModule = computed(() =>
+    this.summaries().find(m => m.status === 'IN_PROGRESS') ??
+    this.summaries().find(m => m.status === 'NOT_STARTED') ??
+    null
+  );
+
   answeredCount = computed(() => {
     const content = this.currentContent();
     if (!content) return 0;
@@ -86,6 +166,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.streamSubscription = this.moduleStream.connect().subscribe(() => this.syncNewModules());
     this.loadProgress();
+    this.profileService.refresh();
   }
 
   ngOnDestroy(): void {
@@ -129,7 +210,9 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.currentContent.set(null);
     this.action.set(null);
     this.theorySelection.set(null);
+    this.theoryFeedback.set(null);
     this.practiceAnswers.set({});
+    this.practiceReview.set(null);
 
     this.modulesService.getModuleProgress(summary.moduleId).subscribe({
       next: (res) => {
@@ -157,11 +240,22 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.loadingSection.set(false);
     this.action.set(null);
     this.theorySelection.set(null);
+    this.theoryFeedback.set(null);
     this.practiceAnswers.set({});
+    this.practiceReview.set(null);
+    this.confirmingPractice.set(false);
+  }
+
+  onEscape(): void {
+    if (this.showResultsModal()) this.closeResults();
+    else if (this.selectedProgress() || this.loadingDetail()) this.closeModule();
   }
 
   selectTheoryOption(optionId: string): void {
+    // Tras acertar las opciones quedan fijas hasta pulsar "Continuar"
+    if (this.theoryFeedback()?.correct) return;
     this.theorySelection.set(optionId);
+    this.theoryFeedback.set(null);
   }
 
   checkTheory(): void {
@@ -193,12 +287,14 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
             return;
           }
 
+          // La retroalimentación se muestra junto a la pregunta: el estudiante la lee
+          // y decide cuándo avanzar (si acierta) o vuelve a intentarlo (si falla)
+          this.theoryFeedback.set(result);
+          // La explicación aparece bajo las opciones: se lleva a la vista
+          afterNextRender(() => document.querySelector('.feedback')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+            { injector: this.injector });
           if (result.correct) {
-            this.action.set({ text: result.message, type: 'success' });
-            this.refreshAfterAction(progress.summary.moduleId);
-          } else {
-            this.action.set({ text: result.message, type: 'error' });
-            this.theorySelection.set(null);
+            this.profileService.refresh();
           }
         },
         error: (err) => {
@@ -209,6 +305,18 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
           });
         }
       });
+  }
+
+  /** Tras leer la explicación de una respuesta correcta, pasa a la siguiente sesión. */
+  continueAfterTheory(): void {
+    const progress = this.selectedProgress();
+    if (!progress) return;
+    this.theoryFeedback.set(null);
+    this.refreshAfterAction(progress.summary.moduleId);
+  }
+
+  cancelSubmitPractice(): void {
+    this.confirmingPractice.set(false);
   }
 
   selectPracticeOption(questionId: string, optionId: string): void {
@@ -228,10 +336,12 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const confirmed = window.confirm(
-      '¿Enviar la práctica? Solo tienes un intento y después no podrás volver a las sesiones anteriores.'
-    );
-    if (!confirmed) return;
+    // Primer clic: pedir confirmación dentro de la propia sesión (no se pueden cambiar las respuestas)
+    if (!this.confirmingPractice()) {
+      this.confirmingPractice.set(true);
+      return;
+    }
+    this.confirmingPractice.set(false);
 
     const answers = content.questions.map((question) => ({
       questionId: question.id,
@@ -251,6 +361,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         }
 
         this.selectedProgress.set(updated);
+        this.profileService.refresh();
         this.currentContent.set(null);
         this.theorySelection.set(null);
         this.practiceAnswers.set({});
@@ -264,6 +375,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
             : `Práctica enviada. Nota: ${updated.summary.score} pts. No alcanzaste la nota mínima de ${updated.summary.passingScore} pts.`,
           type: updated.summary.passed ? 'success' : 'error'
         });
+        this.loadPracticeReview(updated.summary.moduleId);
       },
       error: (err) => {
         this.submittingPractice.set(false);
@@ -271,6 +383,23 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
           text: this.readError(err, 'No se pudo enviar la práctica.'),
           type: 'error'
         });
+      }
+    });
+  }
+
+  /** Carga la corrección de la práctica: qué respondió, cuál era la correcta y por qué. */
+  loadPracticeReview(moduleId: string): void {
+    this.loadingReview.set(true);
+    this.modulesService.getPracticeReview(moduleId).subscribe({
+      next: (res) => {
+        this.loadingReview.set(false);
+        // Si el estudiante cerró o cambió de módulo mientras cargaba, se descarta
+        if (this.selectedProgress()?.summary.moduleId !== moduleId) return;
+        this.practiceReview.set(res.data ?? null);
+      },
+      error: (err) => {
+        this.loadingReview.set(false);
+        this.action.set({ text: this.readError(err, 'No se pudo cargar la corrección.'), type: 'error' });
       }
     });
   }
@@ -283,9 +412,42 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     this.showResultsModal.set(false);
   }
 
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/auth/login']);
+  setLearningTab(tab: LearningTab): void {
+    this.learningTab.set(tab);
+  }
+
+  /** Cambio optimista: se marca al instante y se revierte si el servidor falla. */
+  toggleSaved(summary: ModuleSummary): void {
+    if (this.savingIds().has(summary.moduleId)) return;
+    const saved = !summary.saved;
+    this.saveError.set(null);
+    this.setSavedLocally(summary.moduleId, saved);
+    this.savingIds.update(ids => new Set(ids).add(summary.moduleId));
+
+    this.modulesService.setSaved(summary.moduleId, saved).subscribe({
+      next: () => this.clearSaving(summary.moduleId),
+      error: (err) => {
+        this.clearSaving(summary.moduleId);
+        this.setSavedLocally(summary.moduleId, !saved);
+        this.saveError.set(this.readError(err, 'No se pudo actualizar tus guardados.'));
+      }
+    });
+  }
+
+  private setSavedLocally(moduleId: string, saved: boolean): void {
+    this.summaries.update(list => list.map(m => (m.moduleId === moduleId ? { ...m, saved } : m)));
+    const open = this.selectedProgress();
+    if (open?.summary.moduleId === moduleId) {
+      this.selectedProgress.set({ ...open, summary: { ...open.summary, saved } });
+    }
+  }
+
+  private clearSaving(moduleId: string): void {
+    this.savingIds.update(ids => {
+      const next = new Set(ids);
+      next.delete(moduleId);
+      return next;
+    });
   }
 
   statusLabel(status: ProgressStatus): string {
@@ -301,32 +463,6 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  cardLabel(summary: ModuleSummary): string {
-    if (summary.status === 'COMPLETED') {
-      return `Completado · ${summary.score ?? summary.progressPercent} pts`;
-    }
-    if (summary.status === 'FAILED') {
-      return `No aprobado · ${summary.score ?? 0} pts`;
-    }
-    if (summary.status === 'IN_PROGRESS') {
-      return `En curso · ${summary.progressPercent}%`;
-    }
-    return 'Disponible';
-  }
-
-  statusClass(status: ProgressStatus): string {
-    switch (status) {
-      case 'COMPLETED':
-        return 'badge-completed';
-      case 'IN_PROGRESS':
-        return 'badge-in-progress';
-      case 'FAILED':
-        return 'badge-failed';
-      default:
-        return 'badge-not-started';
-    }
-  }
-
   sectionLabel(section: SectionProgress): string {
     return section.type === 'PRACTICE' ? 'Práctica' : `Teoría ${section.order}`;
   }
@@ -338,25 +474,67 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   sectionStateClass(section: SectionProgress): string {
-    if (section.status === 'COMPLETED') return 'badge-completed';
-    if (section.accessible) return 'badge-in-progress';
-    return 'badge-not-started';
+    if (section.status === 'COMPLETED') return 'ca-badge--secure';
+    if (section.accessible) return 'ca-badge--signal';
+    return '';
+  }
+
+  sectionSteps(progress: ModuleProgress): CircuitStep[] {
+    return progress.sections.map(section => {
+      const final = section.type === 'PRACTICE';
+      const label = this.sectionLabel(section);
+      if (section.status === 'FAILED' || (final && progress.summary.status === 'FAILED')) {
+        return { label, final, state: 'failed' };
+      }
+      if (section.status === 'COMPLETED') return { label, final, state: 'done' };
+      if (section.accessible) return { label, final, state: 'current' };
+      return { label, final, state: 'locked' };
+    });
+  }
+
+  nextStepLabel(summary: ModuleSummary): string {
+    return summary.completedSections >= summary.totalSections - 1
+      ? 'Práctica final'
+      : `Teoría ${summary.completedSections + 1}`;
+  }
+
+  attemptsLeft(progress: ModuleProgress): number {
+    return Math.max(progress.summary.maxPracticeAttempts - progress.summary.practiceAttempts, 0);
   }
 
   moduleFinished(progress: ModuleProgress): boolean {
     return progress.summary.status === 'COMPLETED' || progress.summary.status === 'FAILED';
   }
 
+  /** Vuelve a abrir la práctica suspendida para un nuevo intento. */
+  retryPractice(progress: ModuleProgress): void {
+    const practice = progress.sections.find((section) => section.type === 'PRACTICE' && section.accessible);
+    if (!practice) return;
+    this.practiceReview.set(null);
+    this.action.set(null);
+    this.loadSection(progress, practice);
+  }
+
   private loadCurrentSection(progress: ModuleProgress): void {
-    const current = progress.sections.find((section) => section.accessible);
-    this.theorySelection.set(null);
-    this.practiceAnswers.set({});
+    // Con la práctica suspendida se muestra primero el resultado; el reintento lo pide el estudiante
+    const current = progress.summary.status === 'FAILED'
+      ? undefined
+      : progress.sections.find((section) => section.accessible);
 
     if (!current) {
+      this.theorySelection.set(null);
+      this.theoryFeedback.set(null);
+      this.practiceAnswers.set({});
       this.currentContent.set(null);
       return;
     }
+    this.loadSection(progress, current);
+  }
 
+  private loadSection(progress: ModuleProgress, current: SectionProgress): void {
+    this.theorySelection.set(null);
+    this.theoryFeedback.set(null);
+    this.practiceAnswers.set({});
     this.loadingSection.set(true);
     this.modulesService.getSection(progress.summary.moduleId, current.sectionId).subscribe({
       next: (res) => {

@@ -11,6 +11,7 @@ import {
   CreateModuleRequest,
   ModuleProgress,
   ModuleSummary,
+  PracticeReview,
   SaveSectionContentRequest,
   SectionContent,
   SubmitPracticeRequest,
@@ -58,6 +59,18 @@ export class ModulesService {
     return this.http.get<ApiResponse<ModuleSummary[]>>(`${this.apiUrl}/progress/student/${userId}`);
   }
 
+  /** Reanuda los intentos de la práctica de un estudiante (solo ADMIN). Devuelve su progreso. */
+  resetPracticeAttempts(userId: string, moduleId: string): Observable<ApiResponse<ModuleSummary[]>> {
+    return this.http.post<ApiResponse<ModuleSummary[]>>(
+      `${this.apiUrl}/progress/student/${userId}/modules/${moduleId}/practice/reset`, {});
+  }
+
+  /** Guardar o quitar un módulo de "Mi aprendizaje > Guardados". */
+  setSaved(moduleId: string, saved: boolean): Observable<ApiResponse<void>> {
+    const url = `${this.apiUrl}/modules/${moduleId}/saved`;
+    return saved ? this.http.put<ApiResponse<void>>(url, {}) : this.http.delete<ApiResponse<void>>(url);
+  }
+
   /** Sesión desbloqueada con su contenido y sus preguntas (sin respuestas). */
   getSection(moduleId: string, sectionId: string): Observable<ApiResponse<SectionContent>> {
     return this.http.get<ApiResponse<SectionContent>>(
@@ -86,6 +99,11 @@ export class ModulesService {
       `${this.apiUrl}/modules/${moduleId}/practice/submit`,
       data
     );
+  }
+
+  /** Corrección de la práctica ya enviada, pregunta por pregunta. */
+  getPracticeReview(moduleId: string): Observable<ApiResponse<PracticeReview>> {
+    return this.http.get<ApiResponse<PracticeReview>>(`${this.apiUrl}/modules/${moduleId}/practice/review`);
   }
 
   // --- Editor del administrador ---

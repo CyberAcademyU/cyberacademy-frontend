@@ -1,0 +1,109 @@
+/*
+ * CyberAcademy — tokens de diseño
+ *
+ * Concepto: grafito oscuro iluminado por dos luces (índigo y brasa), como un
+ * equipo en una sala a oscuras. El color de los componentes es estado:
+ *   signal  (índigo) → interactivo / disponible ahora
+ *   secure  (verde)  → completado / aprobado / verificado
+ *   warn    (brasa)  → en curso / requiere atención
+ *   threat  (rojo)   → error / no aprobado / acción destructiva
+ * Las luces ambientales (--ca-beam-*) solo se usan en fondos de portada y
+ * cabeceras de panel, nunca para comunicar estado.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Superficies (de más profunda a más elevada) */
+  --ca-void: #070709;
+  --ca-void-rgb: 7 7 9;
+  --ca-deck: #0c0c10;
+  --ca-deck-rgb: 12 12 16;
+  --ca-panel: #111116;
+  --ca-raised: #19191f;
+  --ca-line: #24242c;
+  --ca-line-strong: #35353f;
+
+  /* Texto */
+  --ca-text: #ededf2;
+  --ca-text-dim: #a4a4b2;
+  --ca-text-dim-rgb: 164 164 178;
+  --ca-text-faint: #8d8d9b; /* >= 5:1 sobre todas las superficies (AA) */
+
+  /* Estados (con su versión en canales para usar con transparencia) */
+  --ca-signal: #8f97ff;
+  --ca-signal-rgb: 143 151 255;
+  --ca-signal-soft: rgb(143 151 255 / 0.13);
+  --ca-secure: #4fe0a1;
+  --ca-secure-rgb: 79 224 161;
+  --ca-secure-soft: rgb(79 224 161 / 0.12);
+  --ca-warn: #ff8a4c;
+  --ca-warn-rgb: 255 138 76;
+  --ca-warn-soft: rgb(255 138 76 / 0.13);
+  --ca-threat: #ff5d73;
+  --ca-threat-rgb: 255 93 115;
+  --ca-threat-soft: rgb(255 93 115 / 0.12);
+  --ca-on-signal: #0b0c1d;
+
+  /* Luces ambientales: decoración de fondo, no estado */
+  --ca-beam-cool: rgb(118 128 255 / 0.55);
+  --ca-beam-warm: rgb(255 122 56 / 0.5);
+
+  /* Rangos de liga: identidad, no estado. Solo dentro de ca-league-emblem y su texto. */
+  --ca-tier-recluta: #a4a4b2;
+  --ca-tier-analista: #d4955f;
+  --ca-tier-defensor: #d5deec;
+  --ca-tier-centinela: #e8cf7a;
+  --ca-tier-elite: #c3a6ff;
+
+  /* Tipografía */
+  --ca-font-display: 'Sora', 'Segoe UI', system-ui, sans-serif;
+  --ca-font-body: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --ca-font-code: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  /* Escala modular 1.25 sobre 16px */
+  --ca-text-xs: 0.8rem;
+  --ca-text-sm: 0.875rem;
+  --ca-text-md: 1rem;
+  --ca-text-lg: 1.25rem;
+  --ca-text-xl: 1.563rem;
+  --ca-text-2xl: 1.953rem;
+  --ca-text-3xl: 2.441rem;
+  --ca-text-4xl: 3.052rem;
+
+  /* Espaciado (base 4px) */
+  --ca-space-1: 0.25rem;
+  --ca-space-2: 0.5rem;
+  --ca-space-3: 0.75rem;
+  --ca-space-4: 1rem;
+  --ca-space-5: 1.5rem;
+  --ca-space-6: 2rem;
+  --ca-space-7: 3rem;
+  --ca-space-8: 4rem;
+
+  /* Forma: la jerarquía decide el radio */
+  --ca-radius-sm: 8px;   /* inputs, botones, filas */
+  --ca-radius-md: 12px;  /* tarjetas */
+  --ca-radius-lg: 18px;  /* paneles principales y diálogos */
+  --ca-radius-pill: 999px;
+
+  /* Elevación por luz, no por sombra gris */
+  --ca-glow-signal: 0 0 0 1px rgb(143 151 255 / 0.35), 0 0 24px rgb(143 151 255 / 0.18);
+  --ca-glow-secure: 0 0 18px rgb(79 224 161 / 0.35);
+
+  /* Movimiento */
+  --ca-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ca-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ca-fast: 150ms;
+  --ca-base: 250ms;
+  --ca-slow: 450ms;
+
+  --ca-focus: 0 0 0 2px var(--ca-void), 0 0 0 4px var(--ca-signal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ca-fast: 0ms;
+    --ca-base: 0ms;
+    --ca-slow: 0ms;
+  }
+}

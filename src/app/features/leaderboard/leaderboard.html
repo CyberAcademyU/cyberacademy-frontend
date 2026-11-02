@@ -1,0 +1,124 @@
+<ca-app-header />
+
+<main class="page">
+  <header class="head">
+    <div class="head-copy">
+      <h1>Clasificación</h1>
+      <p class="lead">Ganas XP al completar teorías y prácticas. La clasificación semanal empieza de cero cada lunes.</p>
+    </div>
+    <div class="ca-segmented period" role="group" aria-label="Periodo de la clasificación">
+      <button type="button" [class.is-active]="period() === 'week'" [attr.aria-pressed]="period() === 'week'"
+              (click)="setPeriod('week')">Esta semana</button>
+      <button type="button" [class.is-active]="period() === 'all'" [attr.aria-pressed]="period() === 'all'"
+              (click)="setPeriod('all')">Desde siempre</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="board" aria-labelledby="board-title" [attr.aria-busy]="loading()">
+      <h2 id="board-title" class="ca-sr-only">
+        {{ period() === 'week' ? 'Clasificación de esta semana' : 'Clasificación desde siempre' }}
+      </h2>
+
+      @if (board(); as b) {
+        <!-- Mi posición -->
+        @if (b.hidden) {
+          <div class="ca-alert ca-alert--warn standing">
+            <ca-icon name="eye-off" [size]="18" />
+            <span>Elegiste no aparecer en la clasificación, así que no tienes puesto.
+              <a routerLink="/dashboard/profile" class="ca-link">Cambiarlo en tu perfil</a></span>
+          </div>
+        } @else if (b.me; as me) {
+          <div class="ca-panel me-strip">
+            <ca-avatar [avatar]="me.avatar" [name]="me.name" [size]="44" />
+            <div class="me-copy">
+              <strong>
+                @if (me.rank) {
+                  Vas en el puesto {{ me.rank }} de {{ b.totalRanked }}
+                } @else if (period() === 'week') {
+                  Todavía no sumas XP esta semana
+                } @else {
+                  Todavía no sumas XP
+                }
+              </strong>
+              <span>
+                @if (me.rank) {
+                  {{ me.xp }} XP {{ period() === 'week' ? 'esta semana' : 'en total' }}
+                } @else {
+                  Completa una teoría para entrar en la clasificación.
+                }
+              </span>
+            </div>
+            <span class="me-league" [style.color]="tierColor(me.league.code)">
+              <ca-league-emblem [code]="me.league.code" [size]="32" />
+              {{ me.league.name }}
+            </span>
+          </div>
+        }
+      }
+
+      @if (loading() && !board()) {
+        <div class="ca-skeleton list-skeleton"></div>
+      } @else if (error()) {
+        <div class="ca-alert ca-alert--threat" role="alert">
+          <span>{{ error() }}</span>
+          <button type="button" class="ca-btn ca-btn--sm" (click)="load()">Reintentar</button>
+        </div>
+      } @else if (board(); as b) {
+        @if (b.entries.length === 0) {
+          <div class="ca-state">
+            <strong>{{ period() === 'week' ? 'Nadie ha sumado XP esta semana' : 'Nadie ha sumado XP todavía' }}</strong>
+            <span>El primero en completar una teoría encabezará la lista.</span>
+            <a routerLink="/dashboard/student" class="ca-btn ca-btn--sm">Ir a mis módulos</a>
+          </div>
+        } @else {
+          <ol class="ranking" [class.is-stale]="loading()">
+            @for (entry of b.entries; track $index) {
+              <li class="row" [class.is-me]="entry.me" [class.is-top]="entry.rank !== null && entry.rank <= 3">
+                <span class="rank ca-num" [attr.aria-label]="'Puesto ' + entry.rank">{{ entry.rank }}</span>
+                <span class="who">
+                  <ca-avatar [avatar]="entry.avatar" [name]="entry.name" [size]="36" />
+                  <span class="name">{{ entry.name }}</span>
+                  @if (entry.me) { <span class="ca-badge ca-badge--signal you">Tú</span> }
+                </span>
+                <span class="league" [style.color]="tierColor(entry.league.code)" [title]="'Liga ' + entry.league.name">
+                  <ca-league-emblem [code]="entry.league.code" [size]="24" />
+                  <span class="league-name">{{ entry.league.name }}</span>
+                </span>
+                <span class="modules ca-num" [title]="'Módulos aprobados ' + (period() === 'week' ? 'esta semana' : 'en total')">
+                  {{ entry.modulesCompleted }} <span class="unit">mód.</span>
+                </span>
+                <span class="xp ca-num">{{ entry.xp }} <span class="unit">XP</span></span>
+              </li>
+            }
+          </ol>
+        }
+      }
+    </section>
+
+    <aside class="rules" aria-labelledby="rules-title">
+      <section class="ca-panel rules-card">
+        <h2 id="rules-title">Cómo se gana XP</h2>
+        <dl class="xp-rules">
+          <div><dt>Teoría completada</dt><dd class="ca-num">+10</dd></div>
+          <div><dt>Práctica enviada</dt><dd>tu nota</dd></div>
+          <div><dt>Módulo aprobado</dt><dd class="ca-num">+50</dd></div>
+        </dl>
+      </section>
+
+      <section class="ca-panel rules-card" aria-labelledby="leagues-title">
+        <h2 id="leagues-title">Ligas</h2>
+        <p class="rules-note">Tu liga depende de tu XP total y nunca baja.</p>
+        <ol class="league-ladder">
+          @for (league of leagues; track league.code) {
+            <li [class.is-current]="profile()?.league?.code === league.code">
+              <ca-league-emblem [code]="league.code" [size]="30" />
+              <span class="ladder-name" [style.color]="tierColor(league.code)">{{ league.name }}</span>
+              <span class="ladder-xp ca-num">{{ league.minXp }} XP</span>
+            </li>
+          }
+        </ol>
+      </section>
+    </aside>
+  </div>
+</main>

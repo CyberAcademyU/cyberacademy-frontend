@@ -1,13 +1,15 @@
 import { Component, OnInit, signal, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { AuthShellComponent } from '../../../shared/ui/auth-shell';
+import { IconComponent } from '../../../shared/ui/icon';
 
 @Component({
   selector: 'app-verify-otp',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, AuthShellComponent, IconComponent],
   templateUrl: './verify-otp.html',
-  styleUrl: './verify-otp.css'
+  styleUrl: '../login/login.css'
 })
 export class VerifyOtpComponent implements OnInit, OnDestroy {
   email = signal<string>('');
@@ -60,7 +62,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
     input.value = this.digits[index];
 
     if (this.digits[index] && index < 5) {
-      const nextInput = input.parentElement?.children[index + 1] as HTMLInputElement;
+      const nextInput = input.parentElement?.querySelectorAll('input')[index + 1];
       if (nextInput) nextInput.focus();
     }
   }
@@ -68,7 +70,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   onKeyDown(event: KeyboardEvent, index: number): void {
     const input = event.target as HTMLInputElement;
     if (event.key === 'Backspace' && !this.digits[index] && index > 0) {
-      const prevInput = input.parentElement?.children[index - 1] as HTMLInputElement;
+      const prevInput = input.parentElement?.querySelectorAll('input')[index - 1];
       if (prevInput) {
         prevInput.focus();
         this.digits[index - 1] = '';

@@ -1,0 +1,160 @@
+/* La portada es una "diapositiva" enmarcada: un panel grande sobre el fondo de la sala */
+.frame {
+  min-height: 100dvh;
+  padding: clamp(10px, 2.5vw, 40px);
+  display: grid;
+}
+
+.stage {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: calc(100dvh - 2 * clamp(10px, 2.5vw, 40px));
+  padding: clamp(var(--ca-space-4), 4vw, var(--ca-space-8));
+  overflow: hidden;
+  border: 1px solid var(--ca-line);
+  border-radius: clamp(var(--ca-radius-md), 2vw, 28px);
+  background:
+    radial-gradient(70% 60% at 100% 0%, rgb(var(--ca-signal-rgb) / 0.12), transparent 60%),
+    linear-gradient(160deg, var(--ca-deck), var(--ca-void) 60%);
+}
+
+.nav {
+  position: relative;
+  z-index: 2;
+}
+
+/* Globo: asoma por la esquina inferior derecha, como el horizonte de un planeta */
+.globe {
+  position: absolute;
+  z-index: -1;
+  right: -26%;
+  bottom: -70%;
+  width: min(150vh, 104vw);
+  pointer-events: none;
+}
+
+/* Video de fondo: ocupa todo el panel y se funde hacia el texto (izquierda y abajo) */
+.media {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% 50%;
+  /* Tono más frío y apagado para que encaje con el grafito e índigo del resto */
+  filter: saturate(0.75) hue-rotate(12deg) brightness(0.85);
+  opacity: 0;
+  transition: opacity 1.2s var(--ca-ease-out);
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.35) 25%, #000 60%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.35) 25%, #000 60%);
+}
+
+.media.is-ready {
+  opacity: 0.8;
+}
+
+/* Haces de luz difusos detrás del globo */
+.beam {
+  position: absolute;
+  z-index: -2;
+  width: 46%;
+  height: 120%;
+  filter: blur(70px);
+  opacity: 0.55;
+  pointer-events: none;
+  animation: beam-in 2.2s var(--ca-ease-out) both;
+}
+
+.beam--cool {
+  top: -30%;
+  right: 8%;
+  background: radial-gradient(closest-side, var(--ca-beam-cool), transparent);
+  transform: rotate(24deg);
+}
+
+.beam--warm {
+  bottom: -55%;
+  right: 34%;
+  width: 30%;
+  background: radial-gradient(closest-side, var(--ca-beam-warm), transparent);
+  transform: rotate(-18deg);
+  animation-delay: 0.6s;
+}
+
+@keyframes beam-in {
+  from { opacity: 0; }
+}
+
+.copy {
+  position: relative;
+  z-index: 1;
+  align-self: end;
+  display: grid;
+  justify-items: start;
+  gap: var(--ca-space-5);
+  max-width: 40rem;
+  padding-bottom: clamp(0px, 2vw, var(--ca-space-5));
+}
+
+h1 {
+  font-size: clamp(2.6rem, 7.2vw, 6.2rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  animation: copy-in 0.9s var(--ca-ease-out) 0.2s both;
+}
+
+.copy p {
+  max-width: 34rem;
+  color: var(--ca-text-dim);
+  font-size: clamp(var(--ca-text-md), 1.4vw, var(--ca-text-lg));
+  line-height: 1.5;
+  animation: copy-in 0.9s var(--ca-ease-out) 0.35s both;
+}
+
+.cta {
+  min-height: 48px;
+  font-size: var(--ca-text-md);
+  animation: copy-in 0.9s var(--ca-ease-out) 0.5s both;
+}
+
+/* El texto puede quedar sobre el globo: una sombra oscura detrás asegura el contraste */
+.copy::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -25% -25% -15% -30%;
+  background: radial-gradient(closest-side, rgb(var(--ca-void-rgb) / 0.8), rgb(var(--ca-void-rgb) / 0.5) 60%, transparent);
+  pointer-events: none;
+}
+
+@keyframes copy-in {
+  from { opacity: 0; transform: translateY(14px); }
+}
+
+@media (max-width: 760px) {
+  .globe {
+    right: -60%;
+    bottom: -42%;
+    width: 210vw;
+    opacity: 0.85;
+  }
+
+  .copy {
+    padding-bottom: var(--ca-space-4);
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beam,
+  h1,
+  .copy p,
+  .cta {
+    animation: none;
+  }
+}

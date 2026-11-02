@@ -1,0 +1,313 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.page {
+  display: grid;
+  gap: var(--ca-space-5);
+  width: min(100% - 2 * var(--ca-space-4), 1180px);
+  margin-inline: auto;
+  padding: var(--ca-space-7) 0 var(--ca-space-8);
+}
+
+.identity-skeleton {
+  height: 320px;
+}
+
+/* ---------- Identidad ---------- */
+.identity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ca-space-5);
+}
+
+.identity-avatar {
+  box-shadow: 0 0 0 1px var(--ca-line-strong), 0 0 0 6px var(--ca-deck), 0 0 0 7px var(--ca-line);
+}
+
+.identity-copy {
+  display: grid;
+  gap: var(--ca-space-2);
+  min-width: 0;
+}
+
+h1 {
+  overflow-wrap: anywhere;
+  font-size: clamp(var(--ca-text-2xl), 4vw, var(--ca-text-3xl));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.identity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ca-space-1) var(--ca-space-4);
+  color: var(--ca-text-dim);
+  font-size: var(--ca-text-sm);
+}
+
+.identity-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.identity-bio {
+  max-width: 62ch;
+  white-space: pre-line;
+}
+
+.identity-edit {
+  align-self: start;
+}
+
+/* ---------- Cifras ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(4, 1fr);
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  background: var(--ca-line); /* el hueco de 1px dibuja los separadores */
+}
+
+.stat {
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: var(--ca-space-4) var(--ca-space-5);
+  background: var(--ca-panel);
+}
+
+.stat dd {
+  margin: 0;
+}
+
+.stat--league {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--ca-space-3);
+}
+
+.of {
+  color: var(--ca-text-faint);
+  font-size: 0.6em;
+}
+
+/* ---------- Columnas ---------- */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: start;
+  gap: var(--ca-space-5);
+}
+
+.column {
+  display: grid;
+  gap: var(--ca-space-5);
+  min-width: 0;
+}
+
+.card {
+  display: grid;
+  gap: var(--ca-space-4);
+  padding: var(--ca-space-5);
+}
+
+.card h2 {
+  font-size: var(--ca-text-lg);
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ca-space-3);
+}
+
+.muted {
+  color: var(--ca-text-dim);
+  font-size: var(--ca-text-sm);
+}
+
+/* ---------- Perfil completo ---------- */
+.checklist-card {
+  position: relative;
+  overflow: hidden;
+  padding-top: calc(var(--ca-space-5) + 4px);
+}
+
+.checklist-meter {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  border-radius: 0;
+}
+
+.checklist {
+  display: grid;
+  gap: var(--ca-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--ca-text-sm);
+}
+
+.checklist li {
+  display: flex;
+  align-items: center;
+  gap: var(--ca-space-3);
+}
+
+.tick {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--ca-line-strong);
+  border-radius: 50%;
+}
+
+.checklist li.is-done {
+  color: var(--ca-text-faint);
+  text-decoration: line-through;
+}
+
+.checklist li.is-done .tick {
+  border-color: var(--ca-secure);
+  background: var(--ca-secure-soft);
+  color: var(--ca-secure);
+}
+
+/* ---------- Insignias ---------- */
+.badges {
+  display: grid;
+  gap: var(--ca-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.badge {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--ca-space-4);
+}
+
+.badge-copy {
+  display: grid;
+  gap: 1px;
+  font-size: var(--ca-text-sm);
+}
+
+.badge-copy strong {
+  font-family: var(--ca-font-display);
+  font-size: var(--ca-text-md);
+}
+
+.badge-copy span {
+  color: var(--ca-text-dim);
+}
+
+.badge:not(.is-earned) .badge-copy strong {
+  color: var(--ca-text-dim);
+}
+
+.badge-status {
+  color: var(--ca-text-faint) !important;
+  font-size: var(--ca-text-xs);
+}
+
+.badge.is-earned .badge-status {
+  color: var(--ca-secure) !important;
+}
+
+/* ---------- Actividad y cuenta ---------- */
+.streak-note {
+  display: flex;
+  align-items: center;
+  gap: var(--ca-space-2);
+}
+
+.streak-note ca-icon {
+  color: var(--ca-warn);
+}
+
+.account {
+  display: grid;
+  gap: var(--ca-space-3);
+  margin: 0;
+}
+
+.account div {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: var(--ca-space-3);
+  font-size: var(--ca-text-sm);
+}
+
+.account dt {
+  color: var(--ca-text-dim);
+}
+
+.account dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ca-space-1) var(--ca-space-3);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.subhead {
+  display: flex;
+  align-items: center;
+  gap: var(--ca-space-2);
+  margin-top: var(--ca-space-2);
+  padding-top: var(--ca-space-4);
+  border-top: 1px solid var(--ca-line);
+  font-size: var(--ca-text-md);
+}
+
+@media (max-width: 1020px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat--league {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding-top: var(--ca-space-5);
+  }
+
+  .identity {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .identity-avatar {
+    --size: 76px !important;
+  }
+
+  .identity-edit {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .account div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

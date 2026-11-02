@@ -1,0 +1,261 @@
+.page {
+  display: grid;
+  gap: var(--ca-space-7);
+  width: min(100% - 2 * var(--ca-space-4), 1280px);
+  margin-inline: auto;
+  padding-block: var(--ca-space-5) var(--ca-space-8);
+}
+
+/* ---------- Cabecera ---------- */
+.intro {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: var(--ca-space-4);
+  max-width: 44rem;
+  padding-top: var(--ca-space-6);
+}
+
+.intro .beam {
+  position: absolute;
+  z-index: -1;
+  top: -140px;
+  left: -10%;
+  width: 70%;
+  height: 300px;
+  background: radial-gradient(closest-side, var(--ca-beam-cool), transparent);
+  filter: blur(60px);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+h1 {
+  font-size: clamp(var(--ca-text-3xl), 6vw, 4.2rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.intro p {
+  color: var(--ca-text-dim);
+  font-size: var(--ca-text-lg);
+}
+
+/* ---------- Tarjetas ---------- */
+.grid {
+  display: grid;
+  /* Hasta 3 columnas; baja a 2 o 1 según el ancho (mínimo ~300px por tarjeta) */
+  --gap: var(--ca-space-4);
+  grid-template-columns: repeat(auto-fill, minmax(max(300px, (100% - 2 * var(--gap)) / 3), 1fr));
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.skeleton {
+  height: 400px;
+  border-radius: var(--ca-radius-lg);
+}
+
+/* Cristal oscuro con la portada encajada arriba, como una ventana a la escena del módulo */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ca-space-4);
+  padding: var(--ca-space-3);
+  overflow: hidden;
+  border: 1px solid var(--ca-line);
+  border-radius: var(--ca-radius-lg);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%), var(--ca-panel);
+  transition: border-color var(--ca-base) var(--ca-ease-out);
+}
+
+.card:hover {
+  border-color: var(--ca-line-strong);
+}
+
+.cover {
+  aspect-ratio: 16 / 9;
+  border-radius: var(--ca-radius-md);
+  transition: transform var(--ca-slow) var(--ca-ease-out);
+}
+
+.card:hover .cover {
+  transform: scale(1.015);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ca-space-4);
+  padding: var(--ca-space-2) var(--ca-space-3) var(--ca-space-3);
+}
+
+/* El primer módulo, destacado: portada a la izquierda y texto a la derecha */
+@media (min-width: 1100px) {
+  .card:first-child {
+    grid-column: span 2;
+    flex-direction: row;
+  }
+
+  .card:first-child .cover {
+    flex: 1.15;
+    aspect-ratio: auto;
+    min-height: 100%;
+  }
+
+  .card:first-child .body {
+    flex: 1;
+    justify-content: center;
+    padding: var(--ca-space-5);
+  }
+
+  .card:first-child h2 {
+    font-size: var(--ca-text-2xl);
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ca-space-3);
+}
+
+.order {
+  color: var(--ca-text-faint);
+  font-size: var(--ca-text-sm);
+  font-weight: 500;
+}
+
+.card h2 {
+  font-size: var(--ca-text-lg);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.desc {
+  color: var(--ca-text-dim);
+  font-size: var(--ca-text-sm);
+}
+
+.topics {
+  display: grid;
+  gap: var(--ca-space-2);
+  padding: var(--ca-space-3);
+  border: 1px solid var(--ca-line);
+  border-radius: var(--ca-radius-md);
+  background: rgb(var(--ca-deck-rgb) / 0.7);
+}
+
+.topics h3 {
+  color: var(--ca-text-dim);
+  font-family: var(--ca-font-body);
+  font-size: var(--ca-text-sm);
+  font-weight: 500;
+}
+
+.topics ol {
+  display: grid;
+  gap: var(--ca-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: topic;
+}
+
+.topics li {
+  display: flex;
+  gap: var(--ca-space-3);
+  align-items: baseline;
+  font-size: var(--ca-text-sm);
+  counter-increment: topic;
+}
+
+/* Las lecciones sí son una secuencia: se numeran */
+.topics li::before {
+  content: counter(topic);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ca-line-strong);
+  border-radius: 50%;
+  color: var(--ca-text-dim);
+  font-size: var(--ca-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Columnas estrechas: el dato arriba y el botón a todo el ancho */
+.foot {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--ca-space-3);
+  margin-top: auto;
+  padding-top: var(--ca-space-2);
+}
+
+.facts {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--ca-space-2);
+  color: var(--ca-text-faint);
+  font-size: var(--ca-text-sm);
+}
+
+/* ---------- Cierre ---------- */
+.closing {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  justify-items: center;
+  gap: var(--ca-space-4);
+  padding: var(--ca-space-7) var(--ca-space-5);
+  overflow: hidden;
+  border: 1px solid var(--ca-line);
+  border-radius: var(--ca-radius-lg);
+  background: var(--ca-deck);
+  text-align: center;
+}
+
+.closing::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  bottom: -160px;
+  left: 50%;
+  width: 60%;
+  height: 260px;
+  background: radial-gradient(closest-side, var(--ca-beam-warm), transparent);
+  filter: blur(60px);
+  opacity: 0.5;
+  transform: translateX(-50%);
+}
+
+.closing h2 {
+  font-size: clamp(var(--ca-text-xl), 3vw, var(--ca-text-2xl));
+  letter-spacing: -0.02em;
+}
+
+.closing p {
+  max-width: 36rem;
+  color: var(--ca-text-dim);
+}
+
+.closing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--ca-space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card:hover .cover {
+    transform: none;
+  }
+}
