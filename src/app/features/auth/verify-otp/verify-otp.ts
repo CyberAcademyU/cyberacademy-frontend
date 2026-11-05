@@ -1,6 +1,7 @@
 import { Component, OnInit, signal, OnDestroy, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { rateLimitMessage } from '../../../core/services/rate-limit-message';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { IconComponent } from '../../../shared/ui/icon';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -116,7 +117,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.error?.message || 'Código OTP inválido o expirado.');
+        this.errorMessage.set(rateLimitMessage(err) ?? (err.error?.message || 'Código OTP inválido o expirado.'));
       }
     });
   }
@@ -136,7 +137,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.isResending.set(false);
-        this.errorMessage.set(err.error?.message || 'Error al reenviar el código.');
+        this.errorMessage.set(rateLimitMessage(err) ?? (err.error?.message || 'Error al reenviar el código.'));
       }
     });
   }
