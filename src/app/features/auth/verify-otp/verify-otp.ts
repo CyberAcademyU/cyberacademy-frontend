@@ -1,17 +1,20 @@
-import { Component, OnInit, signal, OnDestroy } from '@angular/core';
+import { Component, OnInit, signal, OnDestroy, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { IconComponent } from '../../../shared/ui/icon';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
 
 @Component({
   selector: 'app-verify-otp',
   standalone: true,
-  imports: [RouterLink, AuthShellComponent, IconComponent],
+  imports: [RouterLink, AuthShellComponent, IconComponent, ReactiveFormsModule],
   templateUrl: './verify-otp.html',
   styleUrl: '../login/login.css'
 })
 export class VerifyOtpComponent implements OnInit, OnDestroy {
+  private fb = inject(FormBuilder);
   email = signal<string>('');
   digits: string[] = ['', '', '', '', '', ''];
   isLoading = signal(false);
@@ -20,6 +23,10 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   successMessage = signal<string | null>(null);
   cooldownSeconds = signal(60);
   private timer: ReturnType<typeof setInterval> | null = null;
+  passwordForm = this.fb.nonNullable.group({
+    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
+    confirmPassword: ['', Validators.required]
+  }, { validators: passwordMatchValidator('password', 'confirmPassword') });
 
   constructor(
     private route: ActivatedRoute,
@@ -93,14 +100,15 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
 
   verifyCode(): void {
     const otpCode = this.getOtpCode();
-    if (otpCode.length !== 6 || !this.email()) return;
+    if (otpCode.length !== 6 || !this.email() || this.passwordForm.invalid) return;
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    this.authService.verifyOtp({ email: this.email(), otpCode }).subscribe({
+    this.authService.verifyOtp({ email: this.email(), otpCode, password: this.passwordForm.getRawValue().password }).subscribe({
       next: () => {
         this.isLoading.set(false);
+        this.passwordForm.reset();
         this.successMessage.set('¡Correo verificado con éxito! Redirigiendo al login...');
         setTimeout(() => {
           this.router.navigate(['/auth/login'], { queryParams: { verified: 'true', email: this.email() } });
@@ -122,7 +130,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
     this.authService.resendOtp(this.email()).subscribe({
       next: () => {
         this.isResending.set(false);
-        this.successMessage.set('Nuevo código enviado a tu bandeja de entrada.');
+        this.successMessage.set('Si el registro sigue vigente, recibirás un nuevo código.');
         this.startCooldown();
         setTimeout(() => this.successMessage.set(null), 4000);
       },

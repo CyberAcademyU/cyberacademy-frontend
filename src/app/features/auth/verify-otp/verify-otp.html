@@ -27,14 +27,30 @@
 
   <p class="ca-field-hint otp-note">El código caduca en 15 minutos y admite 5 intentos.</p>
 
+  <div [formGroup]="passwordForm" class="form">
+    <p>Elige tu contraseña para activar la cuenta.</p>
+    <div class="ca-field">
+      <label for="verify-password">Contraseña</label>
+      <input id="verify-password" class="ca-input" type="password" formControlName="password" autocomplete="new-password" maxlength="128" />
+      <span class="ca-field-hint">Entre 8 y 128 caracteres.</span>
+    </div>
+    <div class="ca-field">
+      <label for="verify-confirm-password">Repite la contraseña</label>
+      <input id="verify-confirm-password" class="ca-input" type="password" formControlName="confirmPassword" autocomplete="new-password" maxlength="128" />
+      @if (passwordForm.errors?.['passwordMismatch'] && passwordForm.controls.confirmPassword.touched) {
+        <span class="ca-field-error">Las contraseñas no coinciden.</span>
+      }
+    </div>
+  </div>
+
   <button type="button" class="ca-btn ca-btn--primary ca-btn--block"
-          [disabled]="getOtpCode().length !== 6 || isLoading()" (click)="verifyCode()">
+          [disabled]="getOtpCode().length !== 6 || passwordForm.invalid || isLoading()" (click)="verifyCode()">
     {{ isLoading() ? 'Verificando…' : 'Activar cuenta' }}
   </button>
 
   <div class="otp-foot">
     <a routerLink="/auth/register" class="ca-btn ca-btn--quiet ca-btn--sm">
-      <ca-icon name="arrow-left" [size]="16" /> Volver al registro
+      <ca-icon name="arrow-left" [size]="16" /> Usar otro correo
     </a>
     @if (cooldownSeconds() > 0) {
       <span class="ca-field-hint ca-num" aria-live="polite">Reenviar en {{ cooldownSeconds() }} s</span>
@@ -44,4 +60,5 @@
       </button>
     }
   </div>
+  <p class="ca-field-hint">Si el correo es incorrecto, inicia un nuevo registro. El anterior caducará en 24 horas.</p>
 </ca-auth-shell>

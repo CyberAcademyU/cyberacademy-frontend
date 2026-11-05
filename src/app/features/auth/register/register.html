@@ -9,6 +9,7 @@
     <div class="ca-alert ca-alert--threat" role="alert">{{ errorMessage() }}</div>
   }
 
+  @if (!confirming()) {
   <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form" novalidate>
     <div class="row">
       <div class="ca-field">
@@ -27,31 +28,24 @@
              autocomplete="email" placeholder="correo@ejemplo.com" />
     </div>
 
-    <div class="ca-field">
-      <label for="password">Contraseña</label>
-      <div class="password-input">
-        <input #registerPassword id="password" class="ca-input" type="password" formControlName="password"
-               autocomplete="new-password" aria-describedby="password-hint" />
-        <button type="button" class="password-reveal" [caRevealPassword]="registerPassword"><ca-icon name="eye" [size]="20" /></button>
-      </div>
-      <span id="password-hint" class="ca-field-hint">Mínimo 8 caracteres.</span>
-    </div>
-
-    <div class="ca-field">
-      <label for="confirmPassword">Repite la contraseña</label>
-      <div class="password-input">
-        <input #confirmPassword id="confirmPassword" class="ca-input" type="password" formControlName="confirmPassword"
-               autocomplete="new-password" />
-        <button type="button" class="password-reveal" [caRevealPassword]="confirmPassword"><ca-icon name="eye" [size]="20" /></button>
-      </div>
-    </div>
-
     <button type="submit" class="ca-btn ca-btn--primary ca-btn--block" [disabled]="registerForm.invalid || isLoading()">
-      {{ isLoading() ? 'Enviando código…' : 'Crear cuenta' }}
+      Continuar
     </button>
   </form>
+  } @else {
+    <div class="form">
+      <p>Enviaremos el código a <strong>{{ f['email'].value }}</strong>. ¿El correo está bien escrito?</p>
+      <button type="button" class="ca-btn ca-btn--primary ca-btn--block" [disabled]="isLoading()" (click)="confirmRegistration()">
+        {{ isLoading() ? 'Enviando código…' : 'Sí, enviar código' }}
+      </button>
+      <button type="button" class="ca-btn ca-btn--quiet ca-btn--block" [disabled]="isLoading()" (click)="confirming.set(false)">Editar correo</button>
+    </div>
+  }
 
   <p class="switch">
     ¿Ya tienes cuenta? <a routerLink="/auth/login" class="ca-link">Inicia sesión</a>
   </p>
+  @if (f['email'].valid) {
+    <p class="switch">¿Ya solicitaste un código? <a routerLink="/auth/verify-otp" [queryParams]="{ email: f['email'].value }" class="ca-link">Continuar verificación</a></p>
+  }
 </ca-auth-shell>
