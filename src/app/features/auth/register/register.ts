@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
 import { rateLimitMessage } from '../../../core/services/rate-limit-message';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
+import { transientMessage } from '../../../shared/ui/transient-message';
 
 @Component({
   selector: 'app-register',
@@ -15,7 +16,7 @@ import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 export class RegisterComponent {
   registerForm: FormGroup;
   isLoading = signal(false);
-  errorMessage = signal<string | null>(null);
+  errorMessage = transientMessage<string | null>(null);
   confirming = signal(false);
 
   constructor(

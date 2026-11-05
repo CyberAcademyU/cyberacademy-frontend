@@ -5,6 +5,7 @@ import { AuthService } from '../../../core/services/auth';
 import { rateLimitMessage } from '../../../core/services/rate-limit-message';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
+import { transientMessage } from '../../../shared/ui/transient-message';
 
 @Component({
   selector: 'app-password-reset',
@@ -53,8 +54,8 @@ export class PasswordResetComponent {
   private router = inject(Router);
   readonly requested = signal(false);
   readonly sending = signal(false);
-  readonly notice = signal<string | null>(null);
-  readonly error = signal<string | null>(null);
+  readonly notice = transientMessage<string | null>(null);
+  readonly error = transientMessage<string | null>(null);
   readonly requestForm = this.fb.nonNullable.group({ email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]] });
   readonly confirmForm = this.fb.nonNullable.group({
     code: ['', [Validators.required, Validators.pattern(/^[0-9]{6}$/)]],
@@ -72,7 +73,7 @@ export class PasswordResetComponent {
         this.requested.set(true);
         this.notice.set('Si la cuenta existe, recibirás un código de recuperación.');
       },
-      error: err => { this.sending.set(false); this.error.set(rateLimitMessage(err) ?? 'No se pudo solicitar el código. Intenta nuevamente.'); }
+      error: err => { this.sending.set(false); this.error.set(rateLimitMessage(err) ?? (err?.error?.message || 'No se pudo solicitar el código. Intenta nuevamente.')); }
     });
   }
 

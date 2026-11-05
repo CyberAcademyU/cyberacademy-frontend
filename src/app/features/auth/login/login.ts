@@ -1,4 +1,4 @@
-import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
@@ -6,6 +6,7 @@ import { rateLimitMessage } from '../../../core/services/rate-limit-message';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { IconComponent } from '../../../shared/ui/icon';
 import { RevealPasswordDirective } from '../../../shared/ui/reveal-password';
+import { transientMessage } from '../../../shared/ui/transient-message';
 
 @Component({
   selector: 'app-login',
@@ -14,13 +15,12 @@ import { RevealPasswordDirective } from '../../../shared/ui/reveal-password';
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
-export class LoginComponent implements OnDestroy {
+export class LoginComponent {
   private fb = inject(FormBuilder);
   isLoading = signal(false);
-  loginError = signal<string | null>(null);
-  verifiedSuccess = signal(false);
-  passwordChanged = signal(false);
-  private passwordChangedTimer: ReturnType<typeof setTimeout> | null = null;
+  loginError = transientMessage<string | null>(null);
+  verifiedSuccess = transientMessage(false);
+  passwordChanged = transientMessage(false);
   loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required]
@@ -29,13 +29,8 @@ export class LoginComponent implements OnDestroy {
   constructor(private authService: AuthService,
               private router: Router, private route: ActivatedRoute) {
     this.passwordChanged.set(this.router.getCurrentNavigation()?.extras.state?.['passwordChanged'] === true);
-    if (this.passwordChanged()) this.passwordChangedTimer = setTimeout(() => this.passwordChanged.set(false), 10_000);
     this.verifiedSuccess.set(this.route.snapshot.queryParamMap.get('verified') === 'true');
     this.loginForm.patchValue({ email: this.route.snapshot.queryParamMap.get('email') ?? '' });
-  }
-
-  ngOnDestroy(): void {
-    if (this.passwordChangedTimer) clearTimeout(this.passwordChangedTimer);
   }
 
   onLoginSubmit(): void {

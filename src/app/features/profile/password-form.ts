@@ -5,6 +5,7 @@ import { AuthService } from '../../core/services/auth';
 import { ProfileService } from '../../core/services/profile';
 import { rateLimitMessage } from '../../core/services/rate-limit-message';
 import { passwordMatchValidator } from '../../shared/validators/password-match.validator';
+import { transientMessage } from '../../shared/ui/transient-message';
 
 /**
  * Cambio de contraseña. El backend invalida todas las sesiones al cambiarla,
@@ -66,7 +67,7 @@ export class PasswordFormComponent {
 
   protected email = signal(this.auth.currentUserSignal()?.email ?? '');
   protected sending = signal(false);
-  protected error = signal<string | null>(null);
+  protected error = transientMessage<string | null>(null);
 
   protected form = this.fb.nonNullable.group(
     {

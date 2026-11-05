@@ -6,6 +6,7 @@ import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { IconComponent } from '../../../shared/ui/icon';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
+import { transientMessage } from '../../../shared/ui/transient-message';
 
 @Component({
   selector: 'app-verify-otp',
@@ -20,8 +21,8 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
   digits: string[] = ['', '', '', '', '', ''];
   isLoading = signal(false);
   isResending = signal(false);
-  errorMessage = signal<string | null>(null);
-  successMessage = signal<string | null>(null);
+  errorMessage = transientMessage<string | null>(null);
+  successMessage = transientMessage<string | null>(null);
   cooldownSeconds = signal(60);
   private timer: ReturnType<typeof setInterval> | null = null;
   passwordForm = this.fb.nonNullable.group({
@@ -133,7 +134,6 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
         this.isResending.set(false);
         this.successMessage.set('Si el registro sigue vigente, recibirás un nuevo código.');
         this.startCooldown();
-        setTimeout(() => this.successMessage.set(null), 4000);
       },
       error: (err) => {
         this.isResending.set(false);
