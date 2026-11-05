@@ -46,6 +46,18 @@ Si despliegas el backend en otro dominio, cambia `apiUrl` aquí (o usa el `fileR
 
 > El backend debe permitir el origen del frontend en `CORS_ALLOWED_ORIGINS`.
 
+### Imágenes y video en una teoría
+
+El administrador puede añadir hasta dos imágenes y un video a cada teoría:
+
+1. En el panel de administración, entra en **Módulos** y pulsa **Editar contenido** en el módulo correspondiente.
+2. En la teoría deseada, busca **Recursos de la teoría** y pega los enlaces en los campos de imagen y video. Son opcionales y deben empezar por `https://`.
+3. Guarda la sesión. El estudiante verá los recursos debajo del texto de esa teoría, antes de la pregunta de comprensión. Para eliminarlos, borra sus enlaces y guarda de nuevo.
+
+Las imágenes deben tener una URL directa a un archivo accesible por los estudiantes, no un enlace a una página que lo contiene. Usa contenido autorizado y evita enlaces privados, temporales o con credenciales. Videos de YouTube compatibles y enlaces directos a archivos `.mp4` o `.webm` se reproducen en la página; otros enlaces HTTPS se abren en una pestaña nueva. La disponibilidad, permisos de reproducción, subtítulos y accesibilidad dependen del recurso de origen. Comprueba los enlaces desde una cuenta de estudiante.
+
+> El backend necesita las columnas de la migración `V9__theory_media.sql` antes de usar esta función; consulta el README del backend.
+
 ### Secretos y archivos locales
 
 - No subas contraseñas, claves, tokens JWT ni archivos `.env` al repositorio. `.env` y sus variantes (como `.env.local` y `.env.production`) están ignorados por Git.

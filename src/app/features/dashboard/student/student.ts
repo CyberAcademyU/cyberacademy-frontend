@@ -23,6 +23,7 @@ import { AppHeaderComponent } from '../../../shared/ui/app-header';
 import { LeagueEmblemComponent } from '../../../shared/ui/league-emblem';
 import { BadgeMedalComponent } from '../../../shared/ui/badge-medal';
 import { ModuleCardComponent } from './module-card';
+import { TheoryMediaComponent } from './theory-media';
 
 interface ActionMessage {
   text: string;
@@ -46,7 +47,8 @@ const RECENT_LIMIT = 6;
     AppHeaderComponent,
     LeagueEmblemComponent,
     BadgeMedalComponent,
-    ModuleCardComponent
+    ModuleCardComponent,
+    TheoryMediaComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'onEscape()' },
@@ -151,8 +153,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   /** Primer módulo sin terminar, en el orden del catálogo: es lo que el estudiante debería hacer ahora. */
   nextModule = computed(() =>
-    this.summaries().find(m => m.status === 'IN_PROGRESS') ??
-    this.summaries().find(m => m.status === 'NOT_STARTED') ??
+    this.summaries().find(m => !m.locked && m.status === 'IN_PROGRESS') ??
+    this.summaries().find(m => !m.locked && m.status === 'NOT_STARTED') ??
     null
   );
 
@@ -181,11 +183,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   private mergeNewModules(incoming: ModuleSummary[]): void {
-    this.summaries.update(current => {
-      const known = new Set(current.map(item => item.moduleId));
-      return [...current, ...incoming.filter(item => !known.has(item.moduleId))]
-        .sort((a, b) => a.orderIndex - b.orderIndex);
-    });
+    this.summaries.set(incoming);
   }
 
   loadProgress(): void {
@@ -205,6 +203,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   openModule(summary: ModuleSummary): void {
+    if (summary.locked) return;
     this.loadingDetail.set(true);
     this.selectedProgress.set(null);
     this.currentContent.set(null);
@@ -368,6 +367,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         this.summaries.update((list) =>
           list.map((item) => (item.moduleId === updated.summary.moduleId ? updated.summary : item))
         );
+        this.syncNewModules();
 
         this.action.set({
           text: updated.summary.passed
