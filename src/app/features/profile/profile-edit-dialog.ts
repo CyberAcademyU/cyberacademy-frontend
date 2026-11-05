@@ -4,6 +4,7 @@ import { Profile } from '../../core/models/profile.model';
 import { ProfileService } from '../../core/services/profile';
 import { AVATARS, AVATAR_IDS, AvatarComponent } from '../../shared/ui/avatar';
 import { IconComponent } from '../../shared/ui/icon';
+import { transientMessage } from '../../shared/ui/transient-message';
 
 const BIO_MAX = 280;
 
@@ -138,7 +139,7 @@ export class ProfileEditDialogComponent implements OnInit {
   protected readonly avatarIds = AVATAR_IDS;
   protected readonly bioMax = BIO_MAX;
   protected saving = signal(false);
-  protected error = signal<string | null>(null);
+  protected error = transientMessage<string | null>(null);
 
   protected form = this.fb.nonNullable.group({
     avatar: [''],

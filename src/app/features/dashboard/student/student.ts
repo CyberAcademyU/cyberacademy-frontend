@@ -24,6 +24,7 @@ import { LeagueEmblemComponent } from '../../../shared/ui/league-emblem';
 import { BadgeMedalComponent } from '../../../shared/ui/badge-medal';
 import { ModuleCardComponent } from './module-card';
 import { TheoryMediaComponent } from './theory-media';
+import { transientMessage } from '../../../shared/ui/transient-message';
 
 interface ActionMessage {
   text: string;
@@ -78,7 +79,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   // Sesión desbloqueada actual
   currentContent = signal<SectionContent | null>(null);
   loadingSection = signal(false);
-  action = signal<ActionMessage | null>(null);
+  action = transientMessage<ActionMessage | null>(null);
 
   // Pregunta de comprensión de la teoría
   theorySelection = signal<string | null>(null);
@@ -101,7 +102,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   // Mi aprendizaje
   learningTab = signal<LearningTab>('current');
   savingIds = signal<ReadonlySet<string>>(new Set());
-  saveError = signal<string | null>(null);
+  saveError = transientMessage<string | null>(null);
 
   currentModules = computed(() => this.summaries().filter(m => m.status === 'IN_PROGRESS'));
 
