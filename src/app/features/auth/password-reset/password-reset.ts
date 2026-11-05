@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { rateLimitMessage } from '../../../core/services/rate-limit-message';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
 
@@ -71,7 +72,7 @@ export class PasswordResetComponent {
         this.requested.set(true);
         this.notice.set('Si la cuenta existe, recibirás un código de recuperación.');
       },
-      error: () => { this.sending.set(false); this.error.set('No se pudo solicitar el código. Intenta nuevamente.'); }
+      error: err => { this.sending.set(false); this.error.set(rateLimitMessage(err) ?? 'No se pudo solicitar el código. Intenta nuevamente.'); }
     });
   }
 
@@ -86,7 +87,7 @@ export class PasswordResetComponent {
         this.confirmForm.reset();
         void this.router.navigate(['/auth/login'], { state: { passwordChanged: true }, replaceUrl: true });
       },
-      error: err => { this.sending.set(false); this.error.set(err.status === 0 ? 'No se pudo conectar con el servidor.' : err.error?.message || 'No se pudo actualizar la contraseña.'); }
+      error: err => { this.sending.set(false); this.error.set(rateLimitMessage(err) ?? (err.status === 0 ? 'No se pudo conectar con el servidor.' : err.error?.message || 'No se pudo actualizar la contraseña.')); }
     });
   }
 

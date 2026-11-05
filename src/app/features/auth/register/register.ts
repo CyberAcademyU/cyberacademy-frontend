@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { rateLimitMessage } from '../../../core/services/rate-limit-message';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 
 @Component({
@@ -58,7 +59,7 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.error?.message || 'Error al procesar el registro.');
+        this.errorMessage.set(rateLimitMessage(err) ?? (err.error?.message || 'Error al procesar el registro.'));
       }
     });
   }

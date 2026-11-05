@@ -2,6 +2,7 @@ import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { rateLimitMessage } from '../../../core/services/rate-limit-message';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
 import { IconComponent } from '../../../shared/ui/icon';
 import { RevealPasswordDirective } from '../../../shared/ui/reveal-password';
@@ -52,9 +53,9 @@ export class LoginComponent implements OnDestroy {
       },
       error: err => {
         this.isLoading.set(false);
-        this.loginError.set(err.status === 0
+        this.loginError.set(rateLimitMessage(err) ?? (err.status === 0
           ? 'No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.'
-          : err.error?.message || 'Correo o contraseña incorrectos.');
+          : err.error?.message || 'Correo o contraseña incorrectos.'));
       }
     });
   }
