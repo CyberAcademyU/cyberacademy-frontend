@@ -1,6 +1,6 @@
 # CyberAcademy — Frontend
 
-Aplicación web de **CyberAcademy** construida con Angular 22 (standalone components + signals). Consume la API REST del backend en `/api/v1`.
+Aplicación web de **CyberAcademy** construida con Angular 22 (standalone components + signals). Consume la API REST del backend bajo `/api/v1`.
 
 ## Stack
 
@@ -14,7 +14,7 @@ Aplicación web de **CyberAcademy** construida con Angular 22 (standalone compon
 
 ## Requisitos
 
-- Node.js 20+ (recomendado 22)
+- Node.js 22.22.3 o superior dentro de la rama 22 (por ejemplo, 22.23.2)
 - npm 10+
 
 ## Instalación y ejecución
@@ -42,9 +42,20 @@ Archivos:
 - `environment.development.ts` → `ng serve`
 - `environment.ts` → build de producción
 
-Si despliegas el backend en otro dominio, cambia `apiUrl` aquí (o usa el `fileReplacements` de `angular.json`).
+La configuración de producción apunta al backend de Render. Si cambia su URL, actualiza `environment.ts` y vuelve a compilar.
 
 > El backend debe permitir el origen del frontend en `CORS_ALLOWED_ORIGINS`.
+
+### Despliegue como Static Site en Render
+
+1. En Render, crea un **Static Site** desde el repositorio `CyberAcademyU/cyberacademy-frontend`, rama `develop`.
+2. Usa `npm ci && npm run build` como comando de compilación y `dist/frontend/browser` como directorio de publicación.
+3. Configura `NODE_VERSION=22.23.2` en las variables de entorno del sitio estático.
+4. En **Redirects/Rewrites**, agrega una regla de tipo **Rewrite** con origen `/*` y destino `/index.html` para las rutas de Angular.
+5. En el servicio backend, agrega el origen HTTPS exacto del sitio generado a `CORS_ALLOWED_ORIGINS`, separado por comas de los orígenes existentes, sin barra final. Guarda y espera el redespliegue.
+6. Comprueba que el sitio abra, que `/auth/login` funcione al recargar y que el registro, el correo OTP y el inicio de sesión funcionen desde el dominio publicado.
+
+El sitio y el backend son servicios separados. No pongas secretos ni credenciales en las variables del frontend ni en `src/environments/`: se distribuyen al navegador.
 
 ### Imágenes y video en una teoría
 

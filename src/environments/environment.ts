@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: '/api/v1'
+  apiUrl: 'https://cyberacademy-backend-525e.onrender.com/api/v1'
 };
