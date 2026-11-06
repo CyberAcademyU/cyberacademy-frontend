@@ -252,8 +252,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   selectTheoryOption(optionId: string): void {
-    // Tras acertar las opciones quedan fijas hasta pulsar "Continuar"
-    if (this.theoryFeedback()?.correct) return;
+    // Tras responder, las opciones quedan fijas hasta pulsar "Continuar"
+    if (this.theoryFeedback()) return;
     this.theorySelection.set(optionId);
     this.theoryFeedback.set(null);
   }
@@ -287,13 +287,13 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
             return;
           }
 
-          // La retroalimentación se muestra junto a la pregunta: el estudiante la lee
-          // y decide cuándo avanzar (si acierta) o vuelve a intentarlo (si falla)
+          // La retroalimentación se muestra junto a la pregunta: la teoría queda
+          // completada con cualquier respuesta y el estudiante avanza al pulsar "Continuar"
           this.theoryFeedback.set(result);
           // La explicación aparece bajo las opciones: se lleva a la vista
           afterNextRender(() => document.querySelector('.feedback')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
             { injector: this.injector });
-          if (result.correct) {
+          if (result.sectionCompleted) {
             this.profileService.refresh();
           }
         },
@@ -307,12 +307,19 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       });
   }
 
-  /** Tras leer la explicación de una respuesta correcta, pasa a la siguiente sesión. */
+  /** Tras leer el resultado de la pregunta, pasa a la siguiente sesión. */
   continueAfterTheory(): void {
     const progress = this.selectedProgress();
     if (!progress) return;
     this.theoryFeedback.set(null);
     this.refreshAfterAction(progress.summary.moduleId);
+  }
+
+  /** Marca resaltada de la opción correcta cuando la respuesta falló. */
+  isCorrectOption(optionId: string): boolean {
+    const feedback = this.theoryFeedback();
+    if (!feedback || feedback.correct) return false;
+    return feedback.correctOptionId === optionId;
   }
 
   cancelSubmitPractice(): void {

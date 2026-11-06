@@ -250,11 +250,11 @@
                     <p class="quiz-prompt">{{ question.prompt }}</p>
                     @for (option of question.options; track option.id) {
                       <label class="ca-option"
-                             [class.is-right]="theoryFeedback()?.correct && theorySelection() === option.id"
+                             [class.is-right]="(theoryFeedback() && theoryFeedback()!.correct && theorySelection() === option.id) || isCorrectOption(option.id)"
                              [class.is-wrong]="theoryFeedback() && !theoryFeedback()!.correct && theorySelection() === option.id">
                         <input type="radio" [name]="'theory-' + question.id"
                                [checked]="theorySelection() === option.id"
-                               [disabled]="theoryFeedback()?.correct"
+                               [disabled]="!!theoryFeedback()"
                                (change)="selectTheoryOption(option.id)" />
                         <span>{{ option.text }}</span>
                       </label>
@@ -277,13 +277,13 @@
                         </div>
                       }
                       @if (!fb.correct) {
-                        <p class="feedback-hint">Repasa el contenido de arriba, elige otra opción y vuelve a comprobar.</p>
+                        <p class="feedback-hint">La opción correcta quedó resaltada; la sesión está completada y la siguiente ya está disponible.</p>
                       }
                     </div>
                   }
 
                   <div class="lesson-actions">
-                    @if (theoryFeedback()?.correct) {
+                    @if (theoryFeedback()) {
                       <button type="button" class="ca-btn ca-btn--primary" (click)="continueAfterTheory()">
                         Continuar <ca-icon name="arrow-right" [size]="18" />
                       </button>

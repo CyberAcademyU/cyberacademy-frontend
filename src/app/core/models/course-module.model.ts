@@ -125,8 +125,10 @@ export interface CheckAnswerResponse {
   message: string;
   /** Por qué la opción elegida es correcta o no. */
   feedback: string | null;
-  /** La lección completa de la pregunta; solo llega si la respuesta es correcta. */
+  /** La lección completa de la pregunta. */
   explanation: string | null;
+  /** Opción correcta, resaltada cuando la respuesta falló. */
+  correctOptionId: string | null;
 }
 
 export interface PracticeAnswer {
