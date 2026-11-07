@@ -574,3 +574,137 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- Skeletons: prenden la forma del contenido mientras carga ---------- */
+.sk-line {
+  height: 10px;
+  border-radius: 999px;
+}
+
+.sk-line--title {
+  height: 18px;
+}
+
+.sk-line--desc {
+  height: 9px;
+}
+
+.sk-stat {
+  height: 28px;
+  width: 42%;
+  border-radius: var(--ca-radius-sm);
+}
+
+.sk-chip {
+  height: 16px;
+  border-radius: 999px;
+}
+
+.sk-btn {
+  width: 92px;
+  height: 34px;
+  border-radius: 999px;
+}
+
+.sk-meter {
+  height: 10px;
+  border-radius: 999px;
+}
+
+/* Resumen: tarjetas de métricas y paneles */
+.sk-panel {
+  display: grid;
+  gap: var(--ca-space-3);
+  align-content: start;
+  min-height: 150px;
+}
+
+.sk-panel--first {
+  margin-top: var(--ca-space-5);
+}
+
+/* Catálogo: tarjeta de módulo */
+.sk-module {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  gap: var(--ca-space-3);
+  padding: var(--ca-space-5);
+  border: 1px solid var(--ca-line);
+  border-radius: var(--ca-radius-sm);
+  background: var(--ca-panel);
+}
+
+.sk-module .sk-cover {
+  aspect-ratio: 16 / 7;
+  margin: calc(var(--ca-space-2) * -1) calc(var(--ca-space-2) * -1) 0;
+  border-radius: var(--ca-radius-sm);
+}
+
+.sk-module .sk-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sk-module .sk-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Tabla de estudiantes: filas con forma de celdas */
+.sk-table {
+  border: 1px solid var(--ca-line);
+  border-radius: var(--ca-radius-sm);
+  background: var(--ca-panel);
+}
+
+.sk-table-row {
+  display: grid;
+  grid-template-columns: 1.6fr 0.8fr 1fr 1fr 0.9fr;
+  align-items: center;
+  gap: var(--ca-space-3);
+  padding: var(--ca-space-3) var(--ca-space-4);
+}
+
+.sk-table-row + .sk-table-row {
+  border-top: 1px solid var(--ca-line);
+}
+
+.sk-table-person {
+  display: grid;
+  gap: 6px;
+}
+
+/* Detalle de un estudiante: filas con barra de avance */
+.sk-rows {
+  display: grid;
+  gap: var(--ca-space-3);
+}
+
+.sk-row {
+  display: grid;
+  gap: var(--ca-space-2);
+}
+
+/* Editor de una sesión: badge y área de texto */
+.sk-editor {
+  display: grid;
+  gap: var(--ca-space-3);
+  padding: var(--ca-space-4);
+  border: 1px solid var(--ca-line);
+  border-radius: var(--ca-radius-sm);
+  background: var(--ca-panel);
+  margin-bottom: var(--ca-space-4);
+}
+
+.sk-textarea {
+  min-height: 120px;
+  border-radius: var(--ca-radius-sm);
+}
+
+@media (max-width: 720px) {
+  .sk-table-row {
+    grid-template-columns: 1.4fr 0.8fr 1fr;
+  }
+}
