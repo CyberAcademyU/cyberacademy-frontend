@@ -3,7 +3,9 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth';
 import { ProfileService } from '../../core/services/profile';
+import { rateLimitMessage } from '../../core/services/rate-limit-message';
 import { passwordMatchValidator } from '../../shared/validators/password-match.validator';
+import { transientMessage } from '../../shared/ui/transient-message';
 
 /**
  * Cambio de contraseña. El backend invalida todas las sesiones al cambiarla,
@@ -65,7 +67,7 @@ export class PasswordFormComponent {
 
   protected email = signal(this.auth.currentUserSignal()?.email ?? '');
   protected sending = signal(false);
-  protected error = signal<string | null>(null);
+  protected error = transientMessage<string | null>(null);
 
   protected form = this.fb.nonNullable.group(
     {
@@ -95,9 +97,9 @@ export class PasswordFormComponent {
       },
       error: err => {
         this.sending.set(false);
-        this.error.set(err?.status === 0
+        this.error.set(rateLimitMessage(err) ?? (err?.status === 0
           ? 'No se pudo conectar con el servidor. Verifica que el backend esté en ejecución.'
-          : err?.error?.message || 'No se pudo cambiar la contraseña.');
+          : err?.error?.message || 'No se pudo cambiar la contraseña.'));
       }
     });
   }

@@ -201,8 +201,70 @@
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
 
-.skeleton-card {
-  height: 230px;
+/* Skeleton con la forma de app-module-card: portada 16:7, fila superior, título, texto y pie */
+.sk-card {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto auto;
+  gap: var(--ca-space-3);
+  padding: var(--ca-space-3) var(--ca-space-5) var(--ca-space-5);
+  border: 1px solid var(--ca-line);
+  border-radius: var(--ca-radius-sm);
+  background: var(--ca-panel);
+}
+
+.sk-cover {
+  aspect-ratio: 16 / 7;
+  margin: 0 calc(var(--ca-space-2) * -1) var(--ca-space-1);
+  border-radius: var(--ca-radius-sm);
+}
+
+.sk-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sk-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.sk-track {
+  height: 10px;
+  border-radius: 999px;
+}
+
+.sk-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Skeleton del contenido de una sesión dentro del modal del módulo */
+.sk-content {
+  display: grid;
+  gap: var(--ca-space-3);
+  align-content: start;
+}
+
+.sk-media {
+  height: 190px;
+  border-radius: var(--ca-radius-md);
+}
+
+.sk-chip {
+  height: 16px;
+  border-radius: 999px;
+}
+
+.sk-line {
+  height: 10px;
+  border-radius: 999px;
+}
+
+.sk-line--title {
+  height: 18px;
 }
 
 .ca-state .ca-btn {

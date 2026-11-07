@@ -23,6 +23,8 @@ import { AppHeaderComponent } from '../../../shared/ui/app-header';
 import { LeagueEmblemComponent } from '../../../shared/ui/league-emblem';
 import { BadgeMedalComponent } from '../../../shared/ui/badge-medal';
 import { ModuleCardComponent } from './module-card';
+import { TheoryMediaComponent } from './theory-media';
+import { transientMessage } from '../../../shared/ui/transient-message';
 
 interface ActionMessage {
   text: string;
@@ -46,7 +48,8 @@ const RECENT_LIMIT = 6;
     AppHeaderComponent,
     LeagueEmblemComponent,
     BadgeMedalComponent,
-    ModuleCardComponent
+    ModuleCardComponent,
+    TheoryMediaComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'onEscape()' },
@@ -76,7 +79,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   // Sesión desbloqueada actual
   currentContent = signal<SectionContent | null>(null);
   loadingSection = signal(false);
-  action = signal<ActionMessage | null>(null);
+  action = transientMessage<ActionMessage | null>(null);
 
   // Pregunta de comprensión de la teoría
   theorySelection = signal<string | null>(null);
@@ -99,7 +102,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   // Mi aprendizaje
   learningTab = signal<LearningTab>('current');
   savingIds = signal<ReadonlySet<string>>(new Set());
-  saveError = signal<string | null>(null);
+  saveError = transientMessage<string | null>(null);
 
   currentModules = computed(() => this.summaries().filter(m => m.status === 'IN_PROGRESS'));
 
@@ -151,8 +154,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   /** Primer módulo sin terminar, en el orden del catálogo: es lo que el estudiante debería hacer ahora. */
   nextModule = computed(() =>
-    this.summaries().find(m => m.status === 'IN_PROGRESS') ??
-    this.summaries().find(m => m.status === 'NOT_STARTED') ??
+    this.summaries().find(m => !m.locked && m.status === 'IN_PROGRESS') ??
+    this.summaries().find(m => !m.locked && m.status === 'NOT_STARTED') ??
     null
   );
 
@@ -181,11 +184,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   private mergeNewModules(incoming: ModuleSummary[]): void {
-    this.summaries.update(current => {
-      const known = new Set(current.map(item => item.moduleId));
-      return [...current, ...incoming.filter(item => !known.has(item.moduleId))]
-        .sort((a, b) => a.orderIndex - b.orderIndex);
-    });
+    this.summaries.set(incoming);
   }
 
   loadProgress(): void {
@@ -205,6 +204,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   openModule(summary: ModuleSummary): void {
+    if (summary.locked) return;
     this.loadingDetail.set(true);
     this.selectedProgress.set(null);
     this.currentContent.set(null);
@@ -252,8 +252,8 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
   }
 
   selectTheoryOption(optionId: string): void {
-    // Tras acertar las opciones quedan fijas hasta pulsar "Continuar"
-    if (this.theoryFeedback()?.correct) return;
+    // Tras responder, las opciones quedan fijas hasta pulsar "Continuar"
+    if (this.theoryFeedback()) return;
     this.theorySelection.set(optionId);
     this.theoryFeedback.set(null);
   }
@@ -287,13 +287,13 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
             return;
           }
 
-          // La retroalimentación se muestra junto a la pregunta: el estudiante la lee
-          // y decide cuándo avanzar (si acierta) o vuelve a intentarlo (si falla)
+          // La retroalimentación se muestra junto a la pregunta: la teoría queda
+          // completada con cualquier respuesta y el estudiante avanza al pulsar "Continuar"
           this.theoryFeedback.set(result);
           // La explicación aparece bajo las opciones: se lleva a la vista
           afterNextRender(() => document.querySelector('.feedback')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
             { injector: this.injector });
-          if (result.correct) {
+          if (result.sectionCompleted) {
             this.profileService.refresh();
           }
         },
@@ -307,12 +307,19 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
       });
   }
 
-  /** Tras leer la explicación de una respuesta correcta, pasa a la siguiente sesión. */
+  /** Tras leer el resultado de la pregunta, pasa a la siguiente sesión. */
   continueAfterTheory(): void {
     const progress = this.selectedProgress();
     if (!progress) return;
     this.theoryFeedback.set(null);
     this.refreshAfterAction(progress.summary.moduleId);
+  }
+
+  /** Marca resaltada de la opción correcta cuando la respuesta falló. */
+  isCorrectOption(optionId: string): boolean {
+    const feedback = this.theoryFeedback();
+    if (!feedback || feedback.correct) return false;
+    return feedback.correctOptionId === optionId;
   }
 
   cancelSubmitPractice(): void {
@@ -368,6 +375,7 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
         this.summaries.update((list) =>
           list.map((item) => (item.moduleId === updated.summary.moduleId ? updated.summary : item))
         );
+        this.syncNewModules();
 
         this.action.set({
           text: updated.summary.passed

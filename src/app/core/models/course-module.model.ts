@@ -40,6 +40,7 @@ export interface ModuleSummary {
   completedAt: string | null;
   lastActivityAt: string | null;
   saved: boolean;
+  locked: boolean;
   /** Intentos usados en la práctica; al llegar al máximo se cierra hasta que el admin los reanude. */
   practiceAttempts: number;
   maxPracticeAttempts: number;
@@ -105,6 +106,9 @@ export interface SectionContent {
   order: number;
   title: string;
   content: string | null;
+  imageUrl1: string | null;
+  imageUrl2: string | null;
+  videoUrl: string | null;
   status: ProgressStatus;
   accessible: boolean;
   questions: QuizQuestion[];
@@ -121,8 +125,10 @@ export interface CheckAnswerResponse {
   message: string;
   /** Por qué la opción elegida es correcta o no. */
   feedback: string | null;
-  /** La lección completa de la pregunta; solo llega si la respuesta es correcta. */
+  /** La lección completa de la pregunta. */
   explanation: string | null;
+  /** Opción correcta, resaltada cuando la respuesta falló. */
+  correctOptionId: string | null;
 }
 
 export interface PracticeAnswer {
@@ -187,6 +193,9 @@ export interface AdminSectionContent {
   order: number;
   title: string;
   content: string | null;
+  imageUrl1: string | null;
+  imageUrl2: string | null;
+  videoUrl: string | null;
   questions: AdminQuestion[];
 }
 
@@ -205,5 +214,8 @@ export interface SaveQuestionRequest {
 export interface SaveSectionContentRequest {
   title: string;
   content: string;
+  imageUrl1?: string | null;
+  imageUrl2?: string | null;
+  videoUrl?: string | null;
   questions: SaveQuestionRequest[];
 }

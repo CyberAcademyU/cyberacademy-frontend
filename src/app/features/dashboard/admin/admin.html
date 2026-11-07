@@ -52,7 +52,32 @@
       </header>
 
       @if (overviewLoading()) {
-        <span class="ca-loader">Cargando resumen…</span>
+        <div aria-busy="true" aria-hidden="true">
+          <div class="metrics">
+            @for (i of [1, 2, 3, 4]; track i) {
+              <div class="metric">
+                <span class="ca-skeleton sk-line" style="width: 55%"></span>
+                <span class="ca-skeleton sk-stat"></span>
+                <span class="ca-skeleton sk-line" style="width: 40%"></span>
+              </div>
+            }
+          </div>
+          <div class="panels">
+            <div class="ca-panel sk-panel sk-panel--first">
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 48%"></span>
+              <span class="ca-skeleton sk-line" style="width: 72%"></span>
+              <div class="ca-skeleton sk-meter"></div>
+              <span class="ca-skeleton sk-line" style="width: 64%"></span>
+              <div class="ca-skeleton sk-meter"></div>
+            </div>
+            <div class="ca-panel sk-panel">
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 56%"></span>
+              <span class="ca-skeleton sk-line" style="width: 80%"></span>
+              <span class="ca-skeleton sk-line" style="width: 68%"></span>
+              <span class="ca-skeleton sk-line" style="width: 74%"></span>
+            </div>
+          </div>
+        </div>
       } @else if (overviewError()) {
         <div class="ca-alert ca-alert--threat" role="alert">
           <span>{{ overviewError() }}</span>
@@ -192,7 +217,23 @@
       }
 
       @if (modulesLoading()) {
-        <span class="ca-loader">Cargando módulos…</span>
+        <div class="catalog" aria-busy="true" aria-hidden="true">
+          @for (i of [1, 2, 3]; track i) {
+            <div class="sk-module">
+              <div class="ca-skeleton sk-cover"></div>
+              <div class="sk-top">
+                <span class="ca-skeleton sk-chip" style="width: 58px"></span>
+                <span class="ca-skeleton sk-chip" style="width: 64px"></span>
+              </div>
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 60%"></span>
+              <span class="ca-skeleton sk-line sk-line--desc" style="width: 88%"></span>
+              <div class="sk-foot">
+                <span class="ca-skeleton sk-line" style="width: 40%"></span>
+                <span class="ca-skeleton sk-btn"></span>
+              </div>
+            </div>
+          }
+        </div>
       } @else if (modulesError()) {
         <div class="ca-alert ca-alert--threat" role="alert">
           <span>{{ modulesError() }}</span>
@@ -244,7 +285,20 @@
       </header>
 
       @if (studentsLoading()) {
-        <span class="ca-loader">Cargando estudiantes…</span>
+        <div class="sk-table" aria-busy="true" aria-hidden="true">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="sk-table-row">
+              <div class="sk-table-person">
+                <span class="ca-skeleton sk-line" style="width: 78%"></span>
+                <span class="ca-skeleton sk-line" style="width: 58%"></span>
+              </div>
+              <span class="ca-skeleton sk-chip" style="width: 70px"></span>
+              <span class="ca-skeleton sk-line" style="width: 44%"></span>
+              <span class="ca-skeleton sk-line" style="width: 52%"></span>
+              <span class="ca-skeleton sk-line" style="width: 40%"></span>
+            </div>
+          }
+        </div>
       } @else if (studentsError()) {
         <div class="ca-alert ca-alert--threat" role="alert">
           <span>{{ studentsError() }}</span>
@@ -329,7 +383,14 @@
         </dl>
 
         @if (studentProgressLoading()) {
-          <span class="ca-loader">Cargando progreso…</span>
+          <div class="sk-rows" aria-busy="true" aria-hidden="true">
+            @for (i of [1, 2, 3, 4]; track i) {
+              <div class="sk-row">
+                <span class="ca-skeleton sk-line" style="width: 64%"></span>
+                <div class="ca-skeleton sk-meter"></div>
+              </div>
+            }
+          </div>
         } @else if (studentProgressError()) {
           <div class="ca-alert ca-alert--threat" role="alert">
             <span>{{ studentProgressError() }}</span>
@@ -355,20 +416,6 @@
                     {{ m.score !== null ? m.score + ' pts' : 'sin nota' }} · mínimo {{ m.passingScore }} pts ·
                     intentos {{ m.practiceAttempts }}/{{ m.maxPracticeAttempts }}
                   </span>
-                  @if (canResetAttempts(m)) {
-                    <div class="reset-row">
-                      @if (confirmResetId() === m.moduleId) {
-                        <span class="ca-field-hint">Se borrará su último intento y tendrá {{ m.maxPracticeAttempts }} nuevos.</span>
-                        <button type="button" class="ca-btn ca-btn--quiet ca-btn--sm" (click)="confirmResetId.set(null)">Cancelar</button>
-                      }
-                      <button type="button" class="ca-btn ca-btn--sm"
-                              [class.ca-btn--primary]="confirmResetId() === m.moduleId"
-                              [disabled]="resettingId() === m.moduleId"
-                              (click)="resetAttempts(student, m)">
-                        {{ resettingId() === m.moduleId ? 'Reanudando…' : (confirmResetId() === m.moduleId ? 'Sí, reanudar' : 'Reanudar intentos') }}
-                      </button>
-                    </div>
-                  }
                 </li>
               }
             </ul>
@@ -406,7 +453,14 @@
                          (valueChange)="changeCover(module, $event)" />
 
         @if (editorLoading()) {
-          <span class="ca-loader">Cargando contenido…</span>
+          <div aria-busy="true" aria-hidden="true">
+            @for (i of [1, 2]; track i) {
+              <div class="sk-editor">
+                <span class="ca-skeleton sk-chip" style="width: 84px"></span>
+                <div class="ca-skeleton sk-textarea"></div>
+              </div>
+            }
+          </div>
         } @else {
           @for (draft of editorSections(); track draft.sectionId) {
             <section class="editor" [class.is-practice]="draft.type === 'PRACTICE'">
@@ -432,8 +486,30 @@
                 </label>
                 <textarea [id]="'content-' + draft.sectionId" class="ca-input" rows="7" maxlength="20000"
                           placeholder="Escribe el material que el estudiante debe leer"
-                          [ngModel]="draft.content" (ngModelChange)="setEditorContent(draft.sectionId, $event)"></textarea>
+                  [ngModel]="draft.content" (ngModelChange)="setEditorContent(draft.sectionId, $event)"></textarea>
               </div>
+
+              @if (draft.type === 'THEORY') {
+                <fieldset class="question">
+                  <legend>Recursos de la teoría (opcionales)</legend>
+                  <p class="ca-field-hint">Agrega enlaces HTTPS a dos imágenes y un video. Se aceptan videos de YouTube, archivos MP4 o WebM y otros enlaces externos.</p>
+                  <div class="ca-field">
+                    <label [for]="'image-1-' + draft.sectionId">Enlace de la primera imagen</label>
+                    <input [id]="'image-1-' + draft.sectionId" class="ca-input" type="url" maxlength="2048" placeholder="https://..."
+                           [ngModel]="draft.imageUrl1" (ngModelChange)="setMediaUrl(draft.sectionId, 'imageUrl1', $event)" />
+                  </div>
+                  <div class="ca-field">
+                    <label [for]="'image-2-' + draft.sectionId">Enlace de la segunda imagen</label>
+                    <input [id]="'image-2-' + draft.sectionId" class="ca-input" type="url" maxlength="2048" placeholder="https://..."
+                           [ngModel]="draft.imageUrl2" (ngModelChange)="setMediaUrl(draft.sectionId, 'imageUrl2', $event)" />
+                  </div>
+                  <div class="ca-field">
+                    <label [for]="'video-' + draft.sectionId">Enlace del video</label>
+                    <input [id]="'video-' + draft.sectionId" class="ca-input" type="url" maxlength="2048" placeholder="https://..."
+                           [ngModel]="draft.videoUrl" (ngModelChange)="setMediaUrl(draft.sectionId, 'videoUrl', $event)" />
+                  </div>
+                </fieldset>
+              }
 
               <div class="questions">
                 @for (question of draft.questions; track $index; let qi = $index) {

@@ -14,7 +14,19 @@
     @if (loading()) {
       <div class="grid" aria-busy="true">
         @for (i of [1, 2, 3, 4]; track i) {
-          <div class="ca-skeleton skeleton"></div>
+          <div class="card" aria-hidden="true">
+            <div class="cover ca-skeleton"></div>
+            <div class="body">
+              <span class="ca-skeleton sk-line" style="width: 42%"></span>
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 64%"></span>
+              <span class="ca-skeleton sk-line sk-line--desc" style="width: 92%"></span>
+              <span class="ca-skeleton sk-line sk-line--desc" style="width: 70%"></span>
+              <div class="sk-foot">
+                <span class="ca-skeleton sk-line sk-line--fact" style="width: 46%"></span>
+                <span class="ca-skeleton sk-btn"></span>
+              </div>
+            </div>
+          </div>
         }
       </div>
     } @else if (error()) {
