@@ -23,17 +23,53 @@ describe('apiLoadingInterceptor', () => {
 
   afterEach(() => { requests.verify(); TestBed.resetTestingModule(); vi.useRealTimers(); });
 
-  it('keeps the loader visible until all concurrent requests finish', () => {
-    http.get(`${environment.apiUrl}/one`).subscribe();
-    http.get(`${environment.apiUrl}/two`).subscribe();
-    const one = requests.expectOne(`${environment.apiUrl}/one`);
-    const two = requests.expectOne(`${environment.apiUrl}/two`);
+  it('keeps the loader visible until all concurrent actions finish', () => {
+    http.post(`${environment.apiUrl}/auth/login`, {}).subscribe();
+    http.post(`${environment.apiUrl}/auth/resend-otp`, {}).subscribe();
+    const one = requests.expectOne(`${environment.apiUrl}/auth/login`);
+    const two = requests.expectOne(`${environment.apiUrl}/auth/resend-otp`);
     vi.advanceTimersByTime(350);
     expect(loading.visible()).toBe(true);
     one.flush({});
     expect(loading.visible()).toBe(true);
     two.flush({});
     expect(loading.visible()).toBe(false);
+  });
+
+  it('lets content skeletons show during reads while keeping the timeout', () => {
+    let error: HttpErrorResponse | undefined;
+    http.get(`${environment.apiUrl}/public/modules`).subscribe({ error: err => error = err });
+    http.get(`${environment.apiUrl}/admin/students`).subscribe();
+    const catalog = requests.expectOne(`${environment.apiUrl}/public/modules`);
+    const students = requests.expectOne(`${environment.apiUrl}/admin/students`);
+    vi.advanceTimersByTime(350);
+    expect(loading.visible()).toBe(false);
+    students.flush({});
+    vi.advanceTimersByTime(API_TIMEOUT_MS - 350);
+    expect(error?.status).toBe(408);
+    expect(catalog.cancelled).toBe(true);
+    expect(loading.visible()).toBe(false);
+  });
+
+  it('does not let a concurrent read hide an action loader', () => {
+    http.get(`${environment.apiUrl}/modules`).subscribe();
+    http.put(`${environment.apiUrl}/modules/one`, {}).subscribe();
+    const read = requests.expectOne(`${environment.apiUrl}/modules`);
+    const action = requests.expectOne(`${environment.apiUrl}/modules/one`);
+    vi.advanceTimersByTime(350);
+    expect(loading.visible()).toBe(true);
+    read.flush({});
+    expect(loading.visible()).toBe(true);
+    action.flush({});
+    expect(loading.visible()).toBe(false);
+  });
+
+  it('does not overlay the background logout request', () => {
+    http.post(`${environment.apiUrl}/auth/logout`, {}).subscribe();
+    const logout = requests.expectOne(`${environment.apiUrl}/auth/logout`);
+    vi.advanceTimersByTime(350);
+    expect(loading.visible()).toBe(false);
+    logout.flush({});
   });
 
   it('reports timeout and stops loading without retrying the request', () => {

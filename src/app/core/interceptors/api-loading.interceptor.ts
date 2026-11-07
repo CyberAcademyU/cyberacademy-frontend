@@ -15,8 +15,11 @@ export const apiLoadingInterceptor: HttpInterceptorFn = (req, next) => {
   const isApi = target.origin === api.origin && (target.pathname === path || target.pathname.startsWith(path + '/'));
   if (!isApi || target.pathname === `${path}/modules/stream`) return next(req);
 
+  // Las lecturas muestran el estado de su propia vista (skeleton, error o vacío).
+  // El overlay se reserva para acciones como login, OTP, guardar y enviar respuestas.
+  const showOverlay = req.method !== 'GET' && target.pathname !== `${path}/auth/logout`;
   return defer(() => {
-    loading.start();
+    if (showOverlay) loading.start();
     return next(req).pipe(
       timeout({ each: API_TIMEOUT_MS }),
       catchError(error => {
@@ -30,7 +33,7 @@ export const apiLoadingInterceptor: HttpInterceptorFn = (req, next) => {
         }
         return throwError(() => error);
       }),
-      finalize(() => loading.finish())
+      finalize(() => { if (showOverlay) loading.finish(); })
     );
   });
 };
