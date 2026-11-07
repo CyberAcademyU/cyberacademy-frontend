@@ -67,7 +67,20 @@
       @if (loading()) {
         <div class="grid grid--learning" aria-busy="true">
           @for (i of [1, 2]; track i) {
-            <div class="ca-skeleton skeleton-card"></div>
+            <div class="sk-card" aria-hidden="true">
+              <div class="ca-skeleton sk-cover"></div>
+              <div class="sk-top">
+                <span class="ca-skeleton sk-chip" style="width: 58px"></span>
+                <span class="ca-skeleton sk-icon"></span>
+              </div>
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 62%"></span>
+              <span class="ca-skeleton sk-line sk-line--desc" style="width: 88%"></span>
+              <div class="ca-skeleton sk-track"></div>
+              <div class="sk-foot">
+                <span class="ca-skeleton sk-chip" style="width: 86px"></span>
+                <span class="ca-skeleton sk-line" style="width: 34%"></span>
+              </div>
+            </div>
           }
         </div>
       } @else if (learningModules().length > 0) {
@@ -152,7 +165,20 @@
     @if (loading()) {
       <div class="grid" aria-busy="true">
         @for (i of [1, 2, 3]; track i) {
-          <div class="ca-skeleton skeleton-card"></div>
+          <div class="sk-card" aria-hidden="true">
+            <div class="ca-skeleton sk-cover"></div>
+            <div class="sk-top">
+              <span class="ca-skeleton sk-chip" style="width: 58px"></span>
+              <span class="ca-skeleton sk-icon"></span>
+            </div>
+            <span class="ca-skeleton sk-line sk-line--title" style="width: 62%"></span>
+            <span class="ca-skeleton sk-line sk-line--desc" style="width: 88%"></span>
+            <div class="ca-skeleton sk-track"></div>
+            <div class="sk-foot">
+              <span class="ca-skeleton sk-chip" style="width: 86px"></span>
+              <span class="ca-skeleton sk-line" style="width: 34%"></span>
+            </div>
+          </div>
         }
       </div>
     } @else if (error()) {
@@ -183,7 +209,14 @@
     <div class="ca-dialog ca-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="lesson-title"
          (click)="$event.stopPropagation()">
       @if (loadingDetail()) {
-        <div class="ca-dialog-body"><span class="ca-loader">Cargando módulo…</span></div>
+        <div class="ca-dialog-body sk-content" aria-hidden="true">
+          <span class="ca-skeleton sk-chip" style="width: 72px"></span>
+          <span class="ca-skeleton sk-line sk-line--title" style="width: 68%"></span>
+          <span class="ca-skeleton sk-line" style="width: 98%"></span>
+          <span class="ca-skeleton sk-line" style="width: 94%"></span>
+          <span class="ca-skeleton sk-line" style="width: 66%"></span>
+          <div class="ca-skeleton sk-media"></div>
+        </div>
       } @else if (selectedProgress(); as progress) {
         <div class="ca-dialog-head">
           <div class="lesson-title-row">
@@ -225,7 +258,14 @@
           }
 
           @if (loadingSection()) {
-            <span class="ca-loader">Cargando la sesión…</span>
+            <div class="sk-content" aria-hidden="true">
+              <span class="ca-skeleton sk-chip" style="width: 72px"></span>
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 68%"></span>
+              <span class="ca-skeleton sk-line" style="width: 98%"></span>
+              <span class="ca-skeleton sk-line" style="width: 94%"></span>
+              <span class="ca-skeleton sk-line" style="width: 66%"></span>
+              <div class="ca-skeleton sk-media"></div>
+            </div>
           } @else if (currentContent(); as content) {
             <article class="lesson">
               <header class="lesson-head">
