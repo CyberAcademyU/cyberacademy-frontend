@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
+import { adminGuard } from './core/guards/admin-guard';
 
 export const routes: Routes = [
   // Páginas públicas: portada y catálogo de módulos
@@ -59,7 +60,7 @@ export const routes: Routes = [
       },
       {
         path: 'admin',
-        canActivate: [authGuard],
+        canActivate: [adminGuard],
         loadComponent: () => import('./features/dashboard/admin/admin').then(m => m.AdminDashboardComponent)
       }
     ]
