@@ -73,6 +73,15 @@ export class AuthService {
     void this.router.navigate(['/']);
   }
 
+  /** Sincroniza el rol real del servidor con la sesión local (p. ej. tras revalidar en adminGuard). */
+  syncUserRole(role: User['role']): void {
+    const current = this.currentUserSignal();
+    if (!current || current.role === role) return;
+    const updated: User = { ...current, role };
+    localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
+    this.currentUserSignal.set(updated);
+  }
+
   clearSession(): void {
     this.sessionEnding.next();
     clearTimeout(this.expiryTimer);
