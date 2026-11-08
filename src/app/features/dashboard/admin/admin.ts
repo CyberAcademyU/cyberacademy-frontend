@@ -18,6 +18,7 @@ import { LogoComponent } from '../../../shared/ui/logo';
 import { IconComponent } from '../../../shared/ui/icon';
 import { ModuleCoverComponent, ModuleCoverKey } from '../../../shared/ui/module-cover';
 import { CoverPickerComponent } from '../../../shared/ui/cover-picker';
+import { transientMessage } from '../../../shared/ui/transient-message';
 
 interface OptionDraft {
   text: string;
@@ -39,6 +40,9 @@ interface SectionDraft {
   order: number;
   title: string;
   content: string;
+  imageUrl1: string;
+  imageUrl2: string;
+  videoUrl: string;
   questions: QuestionDraft[];
 }
 
@@ -58,7 +62,7 @@ export class AdminDashboardComponent implements OnInit {
 
   user = this.authService.currentUserSignal;
   activeTab = signal<'resumen' | 'modulos' | 'usuarios'>('resumen');
-  exportSuccess = signal(false);
+  exportSuccess = transientMessage(false);
 
   // --- Resumen global (datos reales) ---
   overview = signal<AdminOverview | null>(null);
@@ -78,17 +82,17 @@ export class AdminDashboardComponent implements OnInit {
   /** Módulo cuyo reinicio de intentos espera confirmación, y el que se está procesando. */
   confirmResetId = signal<string | null>(null);
   resettingId = signal<string | null>(null);
-  studentProgressMessage = signal<string | null>(null);
+  studentProgressMessage = transientMessage<string | null>(null);
 
   // --- Gestión de módulos ---
   realModules = signal<CourseModuleResponse[]>([]);
   modulesLoading = signal(false);
   modulesError = signal<string | null>(null);
-  modulesMessage = signal<string | null>(null);
+  modulesMessage = transientMessage<string | null>(null);
 
   showCreateForm = signal(false);
   creating = signal(false);
-  createError = signal<string | null>(null);
+  createError = transientMessage<string | null>(null);
   newModule: { code: string; title: string; description: string; cover: ModuleCoverKey | ''; orderIndex: number; passingScore: number } =
     { code: '', title: '', description: '', cover: '', orderIndex: 1, passingScore: 70 };
   savingCover = signal(false);
@@ -97,8 +101,8 @@ export class AdminDashboardComponent implements OnInit {
   editingModule = signal<CourseModuleResponse | null>(null);
   editorSections = signal<SectionDraft[]>([]);
   editorLoading = signal(false);
-  editorError = signal<string | null>(null);
-  editorMessage = signal<string | null>(null);
+  editorError = transientMessage<string | null>(null);
+  editorMessage = transientMessage<string | null>(null);
   savingSectionId = signal<string | null>(null);
 
   completionRate = computed(() => {
@@ -361,6 +365,10 @@ export class AdminDashboardComponent implements OnInit {
     this.updateSection(sectionId, (draft) => ({ ...draft, content: value }));
   }
 
+  setMediaUrl(sectionId: string, field: 'imageUrl1' | 'imageUrl2' | 'videoUrl', value: string): void {
+    this.updateSection(sectionId, draft => ({ ...draft, [field]: value }));
+  }
+
   setQuestionPrompt(sectionId: string, questionIndex: number, value: string): void {
     this.updateSection(sectionId, (draft) => ({
       ...draft,
@@ -478,6 +486,9 @@ export class AdminDashboardComponent implements OnInit {
     const request = {
       title: draft.title.trim(),
       content: draft.content.trim(),
+      imageUrl1: draft.imageUrl1.trim() || null,
+      imageUrl2: draft.imageUrl2.trim() || null,
+      videoUrl: draft.videoUrl.trim() || null,
       questions: draft.questions.map((question) => ({
         prompt: question.prompt.trim(),
         explanation: question.explanation.trim() || null,
@@ -563,7 +574,6 @@ export class AdminDashboardComponent implements OnInit {
     URL.revokeObjectURL(url);
 
     this.exportSuccess.set(true);
-    setTimeout(() => this.exportSuccess.set(false), 3000);
   }
 
   onEscape(): void {
@@ -697,6 +707,9 @@ export class AdminDashboardComponent implements OnInit {
       order: section.order,
       title: section.title,
       content: section.content ?? '',
+      imageUrl1: section.imageUrl1 ?? '',
+      imageUrl2: section.imageUrl2 ?? '',
+      videoUrl: section.videoUrl ?? '',
       questions
     };
   }
@@ -715,6 +728,15 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   private validateDraft(draft: SectionDraft): string | null {
+    for (const value of [draft.imageUrl1, draft.imageUrl2, draft.videoUrl]) {
+      if (!value.trim()) continue;
+      try {
+        const url = new URL(value.trim());
+        if (url.protocol !== 'https:' || !url.hostname || url.username || url.password || value.trim().length > 2048) throw new Error();
+      } catch {
+        return 'Los enlaces de imágenes y video deben ser URL HTTPS válidas de hasta 2048 caracteres.';
+      }
+    }
     if (!draft.title.trim()) {
       return 'El título de la sesión es obligatorio.';
     }

@@ -2,22 +2,22 @@ import { Component, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
+import { rateLimitMessage } from '../../../core/services/rate-limit-message';
 import { AuthShellComponent } from '../../../shared/ui/auth-shell';
-import { passwordMatchValidator } from '../../../shared/validators/password-match.validator';
-import { IconComponent } from '../../../shared/ui/icon';
-import { RevealPasswordDirective } from '../../../shared/ui/reveal-password';
+import { transientMessage } from '../../../shared/ui/transient-message';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, AuthShellComponent, IconComponent, RevealPasswordDirective],
+  imports: [ReactiveFormsModule, RouterLink, AuthShellComponent],
   templateUrl: './register.html',
   styleUrl: '../login/login.css'
 })
 export class RegisterComponent {
   registerForm: FormGroup;
   isLoading = signal(false);
-  errorMessage = signal<string | null>(null);
+  errorMessage = transientMessage<string | null>(null);
+  confirming = signal(false);
 
   constructor(
     private fb: FormBuilder,
@@ -27,11 +27,7 @@ export class RegisterComponent {
     this.registerForm = this.fb.group({
       firstName: ['', [Validators.required, Validators.minLength(2)]],
       lastName: ['', [Validators.required, Validators.minLength(2)]],
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', [Validators.required]]
-    }, {
-      validators: passwordMatchValidator('password', 'confirmPassword')
+      email: ['', [Validators.required, Validators.email]]
     });
   }
 
@@ -45,12 +41,18 @@ export class RegisterComponent {
       return;
     }
 
+    this.confirming.set(true);
+    this.errorMessage.set(null);
+  }
+
+  confirmRegistration(): void {
+    if (!this.confirming() || this.registerForm.invalid || this.isLoading()) return;
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    const { firstName, lastName, email, password } = this.registerForm.value;
+    const { firstName, lastName, email } = this.registerForm.getRawValue();
 
-    this.authService.register({ firstName, lastName, email, password }).subscribe({
+    this.authService.register({ firstName, lastName, email }).subscribe({
       next: () => {
         this.isLoading.set(false);
         // Redirige automáticamente a la pantalla de verificación OTP con el email
@@ -58,7 +60,7 @@ export class RegisterComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
-        this.errorMessage.set(err.error?.message || 'Error al procesar el registro.');
+        this.errorMessage.set(rateLimitMessage(err) ?? (err.error?.message || 'Error al procesar el registro.'));
       }
     });
   }

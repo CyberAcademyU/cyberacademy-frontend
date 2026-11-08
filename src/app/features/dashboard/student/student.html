@@ -67,7 +67,20 @@
       @if (loading()) {
         <div class="grid grid--learning" aria-busy="true">
           @for (i of [1, 2]; track i) {
-            <div class="ca-skeleton skeleton-card"></div>
+            <div class="sk-card" aria-hidden="true">
+              <div class="ca-skeleton sk-cover"></div>
+              <div class="sk-top">
+                <span class="ca-skeleton sk-chip" style="width: 58px"></span>
+                <span class="ca-skeleton sk-icon"></span>
+              </div>
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 62%"></span>
+              <span class="ca-skeleton sk-line sk-line--desc" style="width: 88%"></span>
+              <div class="ca-skeleton sk-track"></div>
+              <div class="sk-foot">
+                <span class="ca-skeleton sk-chip" style="width: 86px"></span>
+                <span class="ca-skeleton sk-line" style="width: 34%"></span>
+              </div>
+            </div>
           }
         </div>
       } @else if (learningModules().length > 0) {
@@ -152,7 +165,20 @@
     @if (loading()) {
       <div class="grid" aria-busy="true">
         @for (i of [1, 2, 3]; track i) {
-          <div class="ca-skeleton skeleton-card"></div>
+          <div class="sk-card" aria-hidden="true">
+            <div class="ca-skeleton sk-cover"></div>
+            <div class="sk-top">
+              <span class="ca-skeleton sk-chip" style="width: 58px"></span>
+              <span class="ca-skeleton sk-icon"></span>
+            </div>
+            <span class="ca-skeleton sk-line sk-line--title" style="width: 62%"></span>
+            <span class="ca-skeleton sk-line sk-line--desc" style="width: 88%"></span>
+            <div class="ca-skeleton sk-track"></div>
+            <div class="sk-foot">
+              <span class="ca-skeleton sk-chip" style="width: 86px"></span>
+              <span class="ca-skeleton sk-line" style="width: 34%"></span>
+            </div>
+          </div>
         }
       </div>
     } @else if (error()) {
@@ -183,7 +209,14 @@
     <div class="ca-dialog ca-dialog--wide" role="dialog" aria-modal="true" aria-labelledby="lesson-title"
          (click)="$event.stopPropagation()">
       @if (loadingDetail()) {
-        <div class="ca-dialog-body"><span class="ca-loader">Cargando módulo…</span></div>
+        <div class="ca-dialog-body sk-content" aria-hidden="true">
+          <span class="ca-skeleton sk-chip" style="width: 72px"></span>
+          <span class="ca-skeleton sk-line sk-line--title" style="width: 68%"></span>
+          <span class="ca-skeleton sk-line" style="width: 98%"></span>
+          <span class="ca-skeleton sk-line" style="width: 94%"></span>
+          <span class="ca-skeleton sk-line" style="width: 66%"></span>
+          <div class="ca-skeleton sk-media"></div>
+        </div>
       } @else if (selectedProgress(); as progress) {
         <div class="ca-dialog-head">
           <div class="lesson-title-row">
@@ -225,7 +258,14 @@
           }
 
           @if (loadingSection()) {
-            <span class="ca-loader">Cargando la sesión…</span>
+            <div class="sk-content" aria-hidden="true">
+              <span class="ca-skeleton sk-chip" style="width: 72px"></span>
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 68%"></span>
+              <span class="ca-skeleton sk-line" style="width: 98%"></span>
+              <span class="ca-skeleton sk-line" style="width: 94%"></span>
+              <span class="ca-skeleton sk-line" style="width: 66%"></span>
+              <div class="ca-skeleton sk-media"></div>
+            </div>
           } @else if (currentContent(); as content) {
             <article class="lesson">
               <header class="lesson-head">
@@ -236,9 +276,12 @@
                 <h3>{{ content.title }}</h3>
               </header>
 
-              @if (content.content) {
-                <div class="lesson-text">{{ content.content }}</div>
-              }
+                @if (content.content) {
+                  <div class="lesson-text">{{ content.content }}</div>
+                }
+                @if (content.type === 'THEORY') {
+                  <app-theory-media [title]="content.title" [imageUrl1]="content.imageUrl1" [imageUrl2]="content.imageUrl2" [videoUrl]="content.videoUrl" />
+                }
 
               @if (content.type === 'THEORY') {
                 @if (content.questions[0]; as question) {
@@ -247,11 +290,11 @@
                     <p class="quiz-prompt">{{ question.prompt }}</p>
                     @for (option of question.options; track option.id) {
                       <label class="ca-option"
-                             [class.is-right]="theoryFeedback()?.correct && theorySelection() === option.id"
+                             [class.is-right]="(theoryFeedback() && theoryFeedback()!.correct && theorySelection() === option.id) || isCorrectOption(option.id)"
                              [class.is-wrong]="theoryFeedback() && !theoryFeedback()!.correct && theorySelection() === option.id">
                         <input type="radio" [name]="'theory-' + question.id"
                                [checked]="theorySelection() === option.id"
-                               [disabled]="theoryFeedback()?.correct"
+                               [disabled]="!!theoryFeedback()"
                                (change)="selectTheoryOption(option.id)" />
                         <span>{{ option.text }}</span>
                       </label>
@@ -274,13 +317,13 @@
                         </div>
                       }
                       @if (!fb.correct) {
-                        <p class="feedback-hint">Repasa el contenido de arriba, elige otra opción y vuelve a comprobar.</p>
+                        <p class="feedback-hint">La opción correcta quedó resaltada; la sesión está completada y la siguiente ya está disponible.</p>
                       }
                     </div>
                   }
 
                   <div class="lesson-actions">
-                    @if (theoryFeedback()?.correct) {
+                    @if (theoryFeedback()) {
                       <button type="button" class="ca-btn ca-btn--primary" (click)="continueAfterTheory()">
                         Continuar <ca-icon name="arrow-right" [size]="18" />
                       </button>
@@ -299,11 +342,7 @@
                   <div class="ca-state">La práctica todavía no tiene preguntas. Vuelve más tarde.</div>
                 } @else {
                   <div class="ca-alert ca-alert--warn">
-                    @if (attemptsLeft(progress) === 1) {
-                      Es tu último intento: si no llegas a la nota mínima, el módulo quedará cerrado hasta que el administrador reanude tus intentos.
-                    } @else {
-                      Tienes {{ attemptsLeft(progress) }} intentos. Al enviarla se corrige al momento; si no llegas a la nota mínima, podrás repasar qué fallaste y volver a intentarlo.
-                    }
+                    La práctica tiene un solo intento. Al enviarla terminarás el módulo y podrás avanzar al siguiente, independientemente de tu nota.
                   </div>
 
                   @for (question of content.questions; track question.id; let qi = $index) {
@@ -352,15 +391,7 @@
                 <h3>{{ progress.summary.passed ? 'Módulo aprobado' : 'Módulo no aprobado' }}</h3>
                 <p>
                   La nota mínima era {{ progress.summary.passingScore }} pts.
-                  @if (progress.summary.passed) {
-                    Este módulo cuenta para tu avance total.
-                  } @else if (attemptsLeft(progress) > 0) {
-                    {{ attemptsLeft(progress) === 1 ? 'Te queda 1 intento.' : 'Te quedan ' + attemptsLeft(progress) + ' intentos.' }}
-                    Repasa qué fallaste y vuelve a intentarlo.
-                  } @else {
-                    Usaste los {{ progress.summary.maxPracticeAttempts }} intentos. Revisa la corrección completa; si necesitas
-                    volver a presentarla, pide al administrador que reanude tus intentos.
-                  }
+                  Terminaste este módulo y puedes continuar con el siguiente disponible.
                 </p>
               </div>
             </div>
@@ -371,12 +402,6 @@
                   <h3 id="review-title">Corrección de la práctica</h3>
                   <span class="ca-num review-count">{{ review.correctCount }} de {{ review.totalQuestions }} correctas</span>
                 </header>
-                @if (!review.passed && attemptsLeft(progress) > 0) {
-                  <p class="review-note">
-                    Como puedes reintentarla, aquí solo ves qué preguntas fallaste y por qué tu respuesta no era la
-                    correcta. La respuesta correcta y la explicación completa aparecen cuando apruebes.
-                  </p>
-                }
                 @for (q of review.questions; track q.id; let qi = $index) {
                   <article class="review-item" [class.is-right]="q.correct" [class.is-wrong]="!q.correct">
                     <p class="review-q">
@@ -413,12 +438,6 @@
                 <button type="button" class="ca-btn" [disabled]="loadingReview()"
                         (click)="loadPracticeReview(progress.summary.moduleId)">
                   {{ loadingReview() ? 'Cargando corrección…' : 'Ver corrección' }}
-                </button>
-              }
-              @if (!progress.summary.passed && attemptsLeft(progress) > 0) {
-                <button type="button" class="ca-btn ca-btn--primary" [disabled]="loadingSection()"
-                        (click)="retryPractice(progress)">
-                  Reintentar práctica
                 </button>
               }
             </div>

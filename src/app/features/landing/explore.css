@@ -52,9 +52,36 @@ h1 {
   list-style: none;
 }
 
-.skeleton {
-  height: 400px;
-  border-radius: var(--ca-radius-lg);
+/* Skeleton con la forma de la tarjeta: portada arriba, líneas de texto y pie con el botón */
+.sk-line {
+  height: 10px;
+  border-radius: 999px;
+}
+
+.sk-line--title {
+  height: 18px;
+}
+
+.sk-line--desc {
+  height: 9px;
+}
+
+.sk-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ca-space-3);
+  margin-top: auto;
+}
+
+.sk-line--fact {
+  height: 9px;
+}
+
+.sk-btn {
+  width: 92px;
+  height: 34px;
+  border-radius: 999px;
 }
 
 /* Cristal oscuro con la portada encajada arriba, como una ventana a la escena del módulo */

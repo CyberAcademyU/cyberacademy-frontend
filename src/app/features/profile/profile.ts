@@ -10,6 +10,7 @@ import { ActivityHeatmapComponent } from '../../shared/ui/activity-heatmap';
 import { IconComponent } from '../../shared/ui/icon';
 import { ProfileEditDialogComponent } from './profile-edit-dialog';
 import { PasswordFormComponent } from './password-form';
+import { transientMessage } from '../../shared/ui/transient-message';
 
 interface ChecklistItem {
   label: string;
@@ -41,7 +42,7 @@ export class ProfileComponent implements OnInit {
   loading = signal(true);
   error = signal<string | null>(null);
   editing = signal(false);
-  notice = signal<string | null>(null);
+  notice = transientMessage<string | null>(null);
 
   memberSince = computed(() => {
     const p = this.profile();

@@ -23,7 +23,6 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   email: string;
-  password: string;
 }
 
 export interface LoginRequest {
@@ -34,6 +33,7 @@ export interface LoginRequest {
 export interface VerifyOtpRequest {
   email: string;
   otpCode: string;
+  password: string;
 }
 
 export interface ApiResponse<T> {
