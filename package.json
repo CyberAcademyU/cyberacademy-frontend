@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "cap:sync": "ng build && cap sync android",
-    "cap:open": "cap open android"
+    "cap:open": "cap open android",
+    "icons:android": "capacitor-assets generate --android --iconBackgroundColor \"#070709\" --iconBackgroundColorDark \"#070709\" --splashBackgroundColor \"#070709\" --splashBackgroundColorDark \"#070709\" && node scripts/android-icons.mjs"
   },
   "private": true,
   "packageManager": "npm@12.2.1",
@@ -36,6 +37,7 @@
     "@capacitor/cli": "^8.6.0",
     "jsdom": "^30.0.0",
     "prettier": "^3.8.1",
+    "sharp": "^0.35.5",
     "typescript": "~6.0.2",
     "vitest": "^5.0.0"
   }

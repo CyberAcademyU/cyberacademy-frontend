@@ -102,12 +102,12 @@ También puedes copiar el APK al teléfono y abrirlo, habilitando antes la insta
 Los recursos fuente están en `assets/` (SVG y PNG). Tras cambiarlos:
 
 ```bash
-npx capacitor-assets generate --android \
-  --iconBackgroundColor "#070709" --iconBackgroundColorDark "#070709" \
-  --splashBackgroundColor "#070709" --splashBackgroundColorDark "#070709"
+npm run icons:android
 ```
 
-`assets/icon-only.png` se usa para el icono legacy y `assets/icon-foreground.png` (con transparencia) para el adaptativo. El fondo del icono adaptativo se define como color en `android/app/src/main/res/values/ic_launcher_background.xml`.
+Ese script ejecuta `capacitor-assets generate --android` con el fondo `#070709` y después `scripts/android-icons.mjs`, que rasteriza el foreground adaptativo a 108dp y aplana los iconos legacy sobre el fondo oscuro. Sin ese segundo paso los iconos legacy quedan con las esquinas transparentes y algunos launchers muestran un fondo blanco alrededor del logo.
+
+`assets/icon-only.png` se usa para el icono legacy y `assets/splash.png` para el splash. El foreground adaptativo sale de `assets/icon-foreground.svg` (transparente, con el logo dentro del área segura de 72dp) y el fondo del icono adaptativo es el color de `android/app/src/main/res/values/ic_launcher_background.xml`.
 
 **Notas**
 
@@ -174,6 +174,7 @@ En GitHub abre un Pull Request con **base `develop`** y como origen tu rama. Esp
 | `npm run watch` | Build en modo watch |
 | `npm run cap:sync` | Build de producción + copia los assets al proyecto Android |
 | `npm run cap:open` | Abre el proyecto Android en Android Studio |
+| `npm run icons:android` | Regenera iconos y splash de Android desde `assets/` |
 
 ## Estructura
 
