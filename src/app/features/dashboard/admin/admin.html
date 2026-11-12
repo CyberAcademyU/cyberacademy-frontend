@@ -62,6 +62,16 @@
               </div>
             }
           </div>
+          <div class="charts">
+            <div class="ca-panel sk-panel">
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 40%"></span>
+              <div class="ca-skeleton sk-chart"></div>
+            </div>
+            <div class="ca-panel sk-panel">
+              <span class="ca-skeleton sk-line sk-line--title" style="width: 48%"></span>
+              <div class="ca-skeleton sk-chart"></div>
+            </div>
+          </div>
           <div class="panels">
             <div class="ca-panel sk-panel sk-panel--first">
               <span class="ca-skeleton sk-line sk-line--title" style="width: 48%"></span>
@@ -106,6 +116,32 @@
             <dd class="metric-sub">En el catálogo</dd>
           </div>
         </dl>
+
+        <div class="charts">
+          <section class="ca-panel panel chart-panel" aria-labelledby="module-progress-title">
+            <div class="chart-head">
+              <h2 id="module-progress-title">Avance por módulo</h2>
+              <p class="chart-note">Porcentaje del total de estudiantes que completó cada módulo.</p>
+            </div>
+            @if (data.modules.length === 0) {
+              <p class="empty">Todavía no hay módulos activos.</p>
+            } @else {
+              <ca-line-chart [points]="moduleProgress()" [max]="100" unit="%" />
+            }
+          </section>
+
+          <section class="ca-panel panel chart-panel" aria-labelledby="module-status-title">
+            <div class="chart-head">
+              <h2 id="module-status-title">Estado por módulo</h2>
+              <p class="chart-note">Estudiantes completados, en curso y no aprobados.</p>
+            </div>
+            @if (data.modules.length === 0) {
+              <p class="empty">Todavía no hay módulos activos.</p>
+            } @else {
+              <ca-bar-chart [groups]="moduleStatusGroups()" [series]="moduleStatusSeries" />
+            }
+          </section>
+        </div>
 
         <div class="panels">
           <section class="ca-panel panel" aria-labelledby="completion-title">

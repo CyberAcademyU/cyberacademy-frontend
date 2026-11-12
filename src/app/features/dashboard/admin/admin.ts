@@ -19,6 +19,8 @@ import { IconComponent } from '../../../shared/ui/icon';
 import { ModuleCoverComponent, ModuleCoverKey } from '../../../shared/ui/module-cover';
 import { CoverPickerComponent } from '../../../shared/ui/cover-picker';
 import { transientMessage } from '../../../shared/ui/transient-message';
+import { LineChartComponent, LinePoint } from '../../../shared/ui/line-chart';
+import { BarChartComponent, BarGroup, BarSeries } from '../../../shared/ui/bar-chart';
 
 interface OptionDraft {
   text: string;
@@ -49,7 +51,16 @@ interface SectionDraft {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, LogoComponent, IconComponent, ModuleCoverComponent, CoverPickerComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    LogoComponent,
+    IconComponent,
+    ModuleCoverComponent,
+    CoverPickerComponent,
+    LineChartComponent,
+    BarChartComponent
+  ],
   host: { '(document:keydown.escape)': 'onEscape()' },
   templateUrl: './admin.html',
   styleUrl: './admin.css'
@@ -110,6 +121,35 @@ export class AdminDashboardComponent implements OnInit {
     if (!data || data.totalStudents === 0) return 0;
     return Math.round((data.studentsCompletedAll / data.totalStudents) * 100);
   });
+
+  /** Módulos ordenados por su posición en el catálogo. */
+  private orderedModules = computed(() =>
+    [...(this.overview()?.modules ?? [])].sort((a, b) => a.orderIndex - b.orderIndex)
+  );
+
+  /** Serie de la gráfica de líneas: porcentaje de estudiantes que completó cada módulo. */
+  moduleProgress = computed<LinePoint[]>(() =>
+    this.orderedModules().map((mod) => ({
+      label: mod.code,
+      value: mod.completionPercent,
+      detail: mod.title
+    }))
+  );
+
+  /** Serie de la gráfica de barras: estudiantes por estado en cada módulo. */
+  moduleStatusGroups = computed<BarGroup[]>(() =>
+    this.orderedModules().map((mod) => ({
+      label: mod.code,
+      detail: mod.title,
+      values: [mod.completedStudents, mod.inProgressStudents, mod.failedStudents]
+    }))
+  );
+
+  readonly moduleStatusSeries: BarSeries[] = [
+    { label: 'Completado', tone: 'secure' },
+    { label: 'En curso', tone: 'warn' },
+    { label: 'No aprobado', tone: 'threat' }
+  ];
 
   ngOnInit(): void {
     this.loadOverview();
