@@ -153,10 +153,25 @@
   font-size: var(--ca-text-xs);
 }
 
-.panels {
+.panels,
+.charts {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: var(--ca-space-4);
+}
+
+.chart-panel {
+  gap: var(--ca-space-4);
+}
+
+.chart-head {
+  display: grid;
+  gap: var(--ca-space-2);
+}
+
+.chart-note {
+  color: var(--ca-text-faint);
+  font-size: var(--ca-text-sm);
 }
 
 .panel {
@@ -506,7 +521,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .panels {
+  .panels,
+  .charts {
     grid-template-columns: 1fr;
   }
 }
@@ -609,6 +625,11 @@
 .sk-meter {
   height: 10px;
   border-radius: 999px;
+}
+
+.sk-chart {
+  height: 210px;
+  border-radius: var(--ca-radius-sm);
 }
 
 /* Resumen: tarjetas de métricas y paneles */
