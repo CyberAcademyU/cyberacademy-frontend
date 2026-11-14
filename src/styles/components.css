@@ -126,7 +126,7 @@
   font-size: var(--ca-text-xs);
 }
 
-.ca-btn--block {`n  margin-top: var(--ca-space-4);`n
+.ca-btn--block {
   width: 100%;
 }
 
@@ -174,7 +174,7 @@
 }
 
 /* ---------- Formularios ---------- */
-.ca-field {`n  margin-bottom: var(--ca-space-4);`n
+.ca-field {
   display: grid;
   gap: var(--ca-space-2);
 }
