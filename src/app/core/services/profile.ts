@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, from, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/user.model';
 import {
@@ -11,12 +11,14 @@ import {
   UpdateProfileRequest
 } from '../models/profile.model';
 import { AuthService } from './auth';
+import { PasswordTransportService, sealPasswords } from './password-transport';
 
 /** Perfil, XP, liga e insignias del usuario autenticado, y la clasificación. */
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = environment.apiUrl;
+  private readonly transport = inject(PasswordTransportService);
 
   /** Último perfil recibido: lo comparten la cabecera, el panel y la página de perfil. */
   readonly profile = signal<Profile | null>(null);
@@ -52,7 +54,12 @@ export class ProfileService {
 
   /** Tras el cambio el backend invalida todas las sesiones, incluida esta. */
   changePassword(data: ChangePasswordRequest): Observable<ApiResponse<void>> {
-    return this.http.put<ApiResponse<void>>(`${this.apiUrl}/profile/password`, data);
+    return from(sealPasswords(this.transport, data, {
+      currentPassword: 'sealedCurrentPassword',
+      newPassword: 'sealedNewPassword'
+    })).pipe(
+      switchMap(body => this.http.put<ApiResponse<void>>(`${this.apiUrl}/profile/password`, body))
+    );
   }
 
   getLeaderboard(period: LeaderboardPeriod): Observable<ApiResponse<Leaderboard>> {

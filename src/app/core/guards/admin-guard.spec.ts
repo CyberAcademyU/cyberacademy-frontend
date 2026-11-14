@@ -20,7 +20,7 @@ describe('adminGuard', () => {
       TestBed.configureTestingModule({
         providers: [
           provideRouter([]),
-          { provide: AuthService, useValue: { isAuthenticated: () => false, isAdmin: () => false } },
+          { provide: AuthService, useValue: { isAuthenticated: () => false, isAdmin: () => false, initialize: () => Promise.resolve() } },
           { provide: ProfileService, useValue: { load: () => of(profileResponse('ADMIN')) } },
         ],
       });
@@ -40,6 +40,7 @@ describe('adminGuard', () => {
             useValue: {
               isAuthenticated: () => true,
               isAdmin: () => true,
+              initialize: () => Promise.resolve(),
               currentUserSignal: () => ({ email: 'test@cyberacademy.com' }),
               syncUserRole: () => undefined,
             },
@@ -57,6 +58,7 @@ describe('adminGuard', () => {
       return {
         isAuthenticated: () => true,
         isAdmin: () => false,
+        initialize: () => Promise.resolve(),
         currentUserSignal: () => ({ email: 'test@cyberacademy.com' }),
         syncUserRole: () => undefined,
       };
