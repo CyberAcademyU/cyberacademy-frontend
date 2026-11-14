@@ -174,7 +174,7 @@
 }
 
 /* ---------- Formularios ---------- */
-.ca-field {
+.ca-field {`n  margin-bottom: var(--ca-space-4);`n
   display: grid;
   gap: var(--ca-space-2);
 }
