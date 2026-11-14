@@ -21,8 +21,7 @@ export class ModuleStreamService {
     return new Observable(subscriber => {
       const controller = new AbortController();
       const session = this.auth.sessionEnding.subscribe(() => controller.abort());
-      const token = this.auth.isAuthenticated() ? this.auth.tokenSignal() : null;
-      if (!token) {
+      if (!this.auth.isAuthenticated()) {
         subscriber.complete();
         session.unsubscribe();
         return;
@@ -33,10 +32,10 @@ export class ModuleStreamService {
         for (let attempt = 0; attempt <= maxRetries && !controller.signal.aborted; attempt++) {
           try {
             await fetchEventSource(`${environment.apiUrl}/modules/stream`, {
-              headers: { Authorization: `Bearer ${token}`, Accept: 'text/event-stream' },
+              headers: { Accept: 'text/event-stream' },
               signal: controller.signal,
               redirect: 'error',
-              credentials: 'omit',
+              credentials: 'include',
               openWhenHidden: true,
               async onopen(response) {
                 if (response.status === 401) throw new UnauthorizedError();
@@ -66,7 +65,12 @@ export class ModuleStreamService {
           } catch (error) {
             if (controller.signal.aborted) break;
             if (error instanceof UnauthorizedError) {
-              this.auth.handleUnauthorized();
+              try {
+                await this.auth.refreshSession();
+                if (attempt < maxRetries) continue;
+              } catch {
+                this.auth.handleUnauthorized();
+              }
               break;
             }
             if (error instanceof PermanentStreamError || attempt === maxRetries) break;

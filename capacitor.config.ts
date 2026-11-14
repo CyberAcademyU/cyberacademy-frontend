@@ -4,9 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.cyberacademy.app',
   appName: 'CyberAcademy',
   webDir: 'dist/frontend/browser',
-  // La app carga los archivos compilados dentro del WebView. El origen que ve
-  // el backend es https://localhost, así que debe estar en CORS_ALLOWED_ORIGINS.
+  // Assets locales, pero origen HTTPS del mismo sitio que la API para cookies Strict.
+  // Requiere cap sync y recompilar el APK; no carga una web remota.
   server: {
+    hostname: 'migueltalavera.site',
     androidScheme: 'https'
   },
   android: {
