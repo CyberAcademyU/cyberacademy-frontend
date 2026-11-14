@@ -22,4 +22,23 @@ describe('TheoryMediaComponent', () => {
     expect(fixture.nativeElement.querySelector('img')).toBeNull();
     expect(fixture.nativeElement.querySelector('a').getAttribute('rel')).toBe('noopener noreferrer');
   });
+
+  it('ignora intentos de inyectar HTML en el identificador del video', () => {
+    for (const videoUrl of [
+      'https://youtu.be/abcdefghijk"><script>alert(1)</script>',
+      'https://www.youtube.com/watch?v=abcdefghijk&html=<img src=x onerror=alert(1)>',
+      'https://www.youtube.com/embed/abcdefghij%22%20onload=alert(1)'
+    ]) {
+      const fixture = TestBed.createComponent(TheoryMediaComponent);
+      fixture.componentRef.setInput('title', 'Phishing');
+      fixture.componentRef.setInput('videoUrl', videoUrl);
+      fixture.detectChanges();
+      const iframe = fixture.nativeElement.querySelector('iframe');
+      if (iframe) {
+        expect(iframe.getAttribute('src')).toMatch(/^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}$/);
+      }
+      expect(fixture.nativeElement.querySelector('script')).toBeNull();
+      expect(fixture.nativeElement.innerHTML).not.toContain('<script>');
+    }
+  });
 });
