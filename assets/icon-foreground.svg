@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <g transform="translate(48 48) scale(29)" fill="none">
+  <!-- Fondo a sangre: algunos launchers (MIUI/HyperOS) ignoran la capa de
+       background del icono adaptativo, así que el color va aquí también. -->
+  <rect width="1024" height="1024" fill="#070709"/>
+  <g transform="translate(224 224) scale(18)" fill="none">
     <path d="M16 2.5l11.5 4.2v8.6c0 7-4.9 12.3-11.5 14.2C9.4 27.6 4.5 22.3 4.5 15.3V6.7z"
           stroke="#ededf2" stroke-width="1.8" stroke-linejoin="round"/>
     <path d="M9.5 13.5h4l2-2h7M9.5 18.5h6.5l2 2h4" stroke="#8f97ff" stroke-width="1.6"
