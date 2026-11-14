@@ -57,6 +57,64 @@ La configuración de producción apunta al backend de Render. Si cambia su URL, 
 
 El sitio y el backend son servicios separados. No pongas secretos ni credenciales en las variables del frontend ni en `src/environments/`: se distribuyen al navegador.
 
+### App Android personal (Capacitor)
+
+El frontend también se empaqueta como app Android con [Capacitor](https://capacitorjs.com/). Es una app de uso personal: usa los archivos compilados dentro del WebView y consume el mismo backend de Render. No se publica en ninguna tienda.
+
+El proyecto nativo vive en `android/` y se configura en `capacitor.config.ts`:
+
+- `appId`: `com.cyberacademy.app`
+- `webDir`: `dist/frontend/browser` (no cambies `outputPath` en `angular.json` sin actualizar esto)
+- `server.androidScheme: 'https'` → el WebView carga la app con origen `https://localhost`
+
+Ese origen debe estar en `CORS_ALLOWED_ORIGINS` del backend (junto a `capacitor://localhost` por si algún día se compila para iOS). Sin él, el login devuelve `403` en el preflight.
+
+**Requisitos**
+
+- JDK 21 (`JAVA_HOME`)
+- Android SDK con platform 35+ y build-tools (`ANDROID_HOME` / `ANDROID_SDK_ROOT`)
+- `android/local.properties` con `sdk.dir` (está ignorado por Git)
+
+**Compilar e instalar**
+
+```bash
+npm install
+npm run cap:sync     # ng build + cap sync android
+cd android
+
+# Windows PowerShell: apunta al SDK y al JDK antes de compilar
+$env:JAVA_HOME='C:\Program Files\Java\jdk-21.0.12'
+$env:ANDROID_HOME="$env:LOCALAPPDATA\Android\Sdk"
+$env:ANDROID_SDK_ROOT=$env:ANDROID_HOME
+.\gradlew.bat assembleDebug
+```
+
+El APK queda en `android/app/build/outputs/apk/debug/app-debug.apk`. Para instalarlo con el teléfono conectado por USB y depuración activada:
+
+```bash
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+También puedes copiar el APK al teléfono y abrirlo, habilitando antes la instalación de apps de origen desconocido.
+
+**Iconos y splash**
+
+Los recursos fuente están en `assets/` (SVG y PNG). Tras cambiarlos:
+
+```bash
+npm run icons:android
+```
+
+Ese script ejecuta `capacitor-assets generate --android` con el fondo `#070709` y después `scripts/android-icons.mjs`, que rasteriza el foreground adaptativo a 108dp y aplana los iconos legacy sobre el fondo oscuro. Sin ese segundo paso los iconos legacy quedan con las esquinas transparentes y algunos launchers muestran un fondo blanco alrededor del logo.
+
+`assets/icon-only.png` se usa para el icono legacy y `assets/splash.png` para el splash. El foreground adaptativo sale de `assets/icon-foreground.svg` (transparente, con el logo dentro del área segura de 72dp) y el fondo del icono adaptativo es el color de `android/app/src/main/res/values/ic_launcher_background.xml`.
+
+**Notas**
+
+- Cualquier cambio en el código Angular requiere `npm run cap:sync` y recompilar el APK.
+- El backend Free duerme tras un periodo de inactividad y tarda ~3 minutos en responder: la primera acción tras abrir la app puede tardar. El primer arranque muestra el splash mientras Angular carga.
+- El APK de depuración (`debug`) se firma con la clave de depuración del equipo, suficiente para uso personal. No lo distribuyas.
+
 ### Imágenes y video en una teoría
 
 El administrador puede añadir hasta dos imágenes y un video a cada teoría:
@@ -114,6 +172,9 @@ En GitHub abre un Pull Request con **base `develop`** y como origen tu rama. Esp
 | `npm run build` | Build de producción en `dist/` |
 | `npm test` | Tests con Vitest |
 | `npm run watch` | Build en modo watch |
+| `npm run cap:sync` | Build de producción + copia los assets al proyecto Android |
+| `npm run cap:open` | Abre el proyecto Android en Android Studio |
+| `npm run icons:android` | Regenera iconos y splash de Android desde `assets/` |
 
 ## Estructura
 
