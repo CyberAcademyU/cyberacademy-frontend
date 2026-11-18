@@ -1,0 +1,113 @@
+<div #rocuContainer class="rocu" (keydown.escape)="close()">
+  @if (isOpen()) {
+    <section class="rocu-panel" aria-labelledby="rocu-title">
+      <header class="rocu-header">
+        <div class="rocu-drag" tabindex="0" role="group" aria-label="Mover ventana de Rocu" aria-describedby="rocu-drag-help"
+             (pointerdown)="startDrag($event)" (pointermove)="moveDrag($event)"
+             (pointerup)="endDrag($event)" (pointercancel)="endDrag($event)" (lostpointercapture)="endDrag($event)"
+             (keydown)="moveWithKeyboard($event)">
+          <ca-rocu-avatar class="rocu-avatar" />
+          <div class="rocu-heading">
+            <strong id="rocu-title">Rocu</strong>
+            <span>Primeros auxilios digitales</span>
+            <span id="rocu-drag-help" class="rocu-drag-hint">Arrastra para mover · Usa las flechas con teclado</span>
+          </div>
+          <span class="rocu-grip" aria-hidden="true">⠿</span>
+        </div>
+        <button class="rocu-close" type="button" aria-label="Cerrar asistente Rocu" (click)="close()">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </header>
+
+      <div class="rocu-body">
+        @if (selectedGuide(); as guide) {
+          <button class="rocu-back" type="button" (click)="reset()">
+            <span aria-hidden="true">←</span> Ver otras situaciones
+          </button>
+          <div class="rocu-message">
+            <span class="rocu-speaker">Rocu</span>
+            <h2>{{ guide.title }}</h2>
+            <p>{{ guide.intro }}</p>
+          </div>
+          @if (guide.id === 'phishing' && !phishingChoice()) {
+            <p class="rocu-question">¿Qué hiciste después de abrir el enlace?</p>
+            <div class="rocu-options">
+              @for (choice of phishingChoices; track choice.label) {
+                <button type="button" (click)="selectPhishingChoice(choice)">
+                  <span>{{ choice.label }}</span><span class="rocu-arrow" aria-hidden="true">↗</span>
+                </button>
+              }
+            </div>
+          } @else {
+            @if (guide.id === 'phishing') {
+              <button class="rocu-back rocu-choice-back" type="button" (click)="selectPhishingChoice(null)">← Cambiar respuesta</button>
+            }
+            <p class="rocu-check-hint">Marca los pasos que hayas realizado, si te sirve.</p>
+            <ol class="rocu-steps">
+              @for (step of (phishingChoice()?.steps ?? guide.steps); track $index) {
+                <li>
+                  <label class="rocu-step" [class.is-complete]="completedSteps().has($index)">
+                    <input type="checkbox" [checked]="completedSteps().has($index)"
+                           (change)="toggleStep($index, $any($event.target).checked)" />
+                    <span>{{ step }}</span>
+                  </label>
+                </li>
+              }
+            </ol>
+            <p class="rocu-check-note">Las marcas se borran al cerrar o cambiar de guía.</p>
+            <p class="rocu-note">Esta guía es orientación inicial y no sustituye la ayuda de un profesional.</p>
+            <button class="rocu-reset" type="button" (click)="reset()">Empezar de nuevo</button>
+          }
+        } @else {
+          <div class="rocu-message">
+            <span class="rocu-speaker">Rocu</span>
+            <h2>Estoy aquí para ayudarte.</h2>
+            <p>Si algo sospechoso acaba de pasar, respira. Vamos paso a paso.</p>
+          </div>
+          <button class="rocu-urgent" type="button" (click)="selectGuide(urgentGuide)">
+            <span aria-hidden="true">!</span>
+            <span><strong>Necesito ayuda urgente</strong><small>Dinero en riesgo, amenazas o peligro físico</small></span>
+            <span class="rocu-urgent-arrow" aria-hidden="true">→</span>
+          </button>
+          <p class="rocu-question">¿Qué ocurrió?</p>
+          <label class="rocu-search-label" for="rocu-search">Buscar una situación</label>
+          <input id="rocu-search" class="rocu-search" type="search" placeholder="Ej. WhatsApp, SMS, contraseña"
+                 [value]="search()" (input)="search.set($any($event.target).value)" autocomplete="off" />
+          <div class="rocu-options">
+            @for (guide of filteredGuides(); track guide.id) {
+              <button type="button" (click)="selectGuide(guide)">
+                <span>{{ guide.label }}</span><span class="rocu-arrow" aria-hidden="true">↗</span>
+              </button>
+            } @empty {
+              <p class="rocu-empty">No encontré esa situación. Prueba con otra palabra o busca ayuda de confianza.</p>
+            }
+          </div>
+          <p class="rocu-privacy"><span aria-hidden="true">✦</span> No compartas contraseñas, códigos ni datos bancarios.</p>
+        }
+      </div>
+      <footer class="rocu-footer">Guía automatizada · No recopila datos</footer>
+    </section>
+  }
+
+  @if (!isOpen() && showIntroduction()) {
+    <div class="rocu-introduction" aria-hidden="true">
+      <strong>Rocu</strong>
+      <span>Tu asistente digital</span>
+    </div>
+  }
+  <div class="rocu-launcher-wrap">
+    @if (!isOpen()) {
+      <span class="rocu-tooltip" aria-hidden="true">Rocu · Asistente digital</span>
+    }
+    <button class="rocu-launcher" type="button" (click)="isOpen() ? close() : open()"
+            [attr.aria-expanded]="isOpen()"
+            [attr.aria-label]="isOpen() ? 'Cerrar asistente Rocu' : 'Abrir Rocu, asistente de primeros auxilios digitales'">
+      @if (isOpen()) {
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+      } @else {
+        <ca-rocu-avatar class="rocu-launcher-avatar" />
+        <span class="rocu-launcher-label">Ayuda</span>
+      }
+    </button>
+  </div>
+</div>
