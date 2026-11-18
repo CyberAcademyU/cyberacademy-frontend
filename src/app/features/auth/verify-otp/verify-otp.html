@@ -43,7 +43,7 @@
     </div>
   </div>
 
-  <button type="button" class="ca-btn ca-btn--primary ca-btn--block"
+  <button type="button" class="ca-btn ca-btn--primary ca-btn--block otp-activate"
           [disabled]="getOtpCode().length !== 6 || passwordForm.invalid || isLoading()" (click)="verifyCode()">
     {{ isLoading() ? 'Verificando…' : 'Activar cuenta' }}
   </button>

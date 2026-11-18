@@ -9,13 +9,13 @@ describe('authGuard', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: AuthService, useValue: { isAuthenticated: () => true } },
+        { provide: AuthService, useValue: { isAuthenticated: () => true, initialize: () => Promise.resolve() } },
       ],
     });
   });
 
-  it('should allow activation when the user is authenticated', () => {
-    const result = TestBed.runInInjectionContext(() =>
+  it('should allow activation when the user is authenticated', async () => {
+    const result = await TestBed.runInInjectionContext(() =>
       authGuard({} as ActivatedRouteSnapshot, {} as RouterStateSnapshot)
     );
     expect(result).toBe(true);

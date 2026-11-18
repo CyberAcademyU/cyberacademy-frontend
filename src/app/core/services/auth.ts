@@ -1,129 +1,112 @@
-import { Injectable, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, Subject, tap, finalize, timeout } from 'rxjs';
+import { Injectable, inject, signal, computed } from '@angular/core';
+import { HttpBackend, HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Observable, Subject, tap, finalize, timeout, firstValueFrom, from, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
 import { User, AuthResponse, RegisterRequest, LoginRequest, VerifyOtpRequest, ApiResponse } from '../models/user.model';
 import { environment } from '../../../environments/environment';
+import { PasswordTransportService, sealPasswords } from './password-transport';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-  // URL base apuntando a Spring Boot
   private readonly apiUrl = environment.apiUrl;
-  private readonly TOKEN_KEY = 'ca_access_token';
-  private readonly USER_KEY = 'ca_user_data';
-  private readonly EXPIRY_KEY = 'ca_token_expiry';
-  private expiryTimer?: ReturnType<typeof setTimeout>;
+  private readonly sessionHttp: HttpClient;
+  private readonly transport = inject(PasswordTransportService);
+  private refreshPending?: Promise<void>;
+  private readonly cookieOptions = { withCredentials: true, headers: { 'X-Requested-With': 'CyberAcademy' } };
+  private ready?: Promise<void>;
   readonly sessionEnding = new Subject<void>();
+  readonly currentUserSignal = signal<User | null>(null);
+  readonly isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
+  readonly isStudent = computed(() => this.currentUserSignal()?.role === 'STUDENT');
+  isAuthenticated = () => this.currentUserSignal() !== null;
 
-  // Signals reactivos de Angular 18+
-  currentUserSignal = signal<User | null>(this.getStoredUser());
-  tokenSignal = signal<string | null>(this.getStoredToken());
+  constructor(private http: HttpClient, backend: HttpBackend, private router: Router) {
+    this.sessionHttp = new HttpClient(backend);
+    // Migración: eliminar datos heredados; nunca leer ni conservar el JWT anterior.
+    for (const key of ['ca_access_token', 'ca_token_expiry', 'ca_user_data']) {
+      try { localStorage.removeItem(key); } catch { /* almacenamiento no disponible */ }
+    }
+  }
 
-  isAuthenticated = () => !!this.tokenSignal() && Number(localStorage.getItem(this.EXPIRY_KEY)) > Date.now();
-  isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
-  isStudent = computed(() => this.currentUserSignal()?.role === 'STUDENT');
+  /** Idempotente: la app lo lanza al arrancar y los guards esperan la misma promesa. */
+  initialize(): Promise<void> {
+    this.ready ??= this.restoreSession();
+    return this.ready;
+  }
 
-  constructor(private http: HttpClient, private router: Router) {
-    if (this.tokenSignal()) this.scheduleExpiry(Number(localStorage.getItem(this.EXPIRY_KEY)));
+  private async restoreSession(): Promise<void> {
+    try {
+      await this.loadSession();
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        try { await this.refreshSession(); await this.loadSession(); } catch { this.clearSession(); }
+      }
+    }
+  }
+
+  private async loadSession(): Promise<void> {
+    const response = await firstValueFrom(this.sessionHttp.get<ApiResponse<AuthResponse>>(
+      `${this.apiUrl}/auth/me`, this.cookieOptions).pipe(timeout(15000)));
+    this.currentUserSignal.set(response.data?.user ?? null);
+  }
+
+  refreshSession(): Promise<void> {
+    if (!this.refreshPending) {
+      const refresh = async () => {
+        // Otra pestaña pudo renovar mientras esperábamos el lock.
+        try { await this.loadSession(); return; } catch (error) {
+          if (!(error instanceof HttpErrorResponse) || error.status !== 401) throw error;
+        }
+        await firstValueFrom(this.sessionHttp.post(`${this.apiUrl}/auth/refresh`, {}, this.cookieOptions).pipe(timeout(15000)));
+      };
+      // Serializar entre pestañas evita reuso accidental de refresh tokens rotados.
+      this.refreshPending = (navigator.locks
+        ? navigator.locks.request('cyberacademy-session-refresh', refresh)
+        : refresh()).finally(() => { this.refreshPending = undefined; });
+    }
+    return this.refreshPending;
   }
 
   register(data: RegisterRequest): Observable<ApiResponse<{ email: string }>> {
-    // El rol nunca se envía desde el cliente: el backend fuerza 'STUDENT'
     return this.http.post<ApiResponse<{ email: string }>>(`${this.apiUrl}/auth/register`, data);
   }
-
   verifyOtp(data: VerifyOtpRequest): Observable<ApiResponse<{ verified: boolean }>> {
-    return this.http.post<ApiResponse<{ verified: boolean }>>(`${this.apiUrl}/auth/verify-otp`, data);
+    return from(sealPasswords(this.transport, data, { password: 'sealedPassword' })).pipe(
+      switchMap(body => this.http.post<ApiResponse<{ verified: boolean }>>(`${this.apiUrl}/auth/verify-otp`, body))
+    );
   }
-
   resendOtp(email: string): Observable<ApiResponse<void>> {
     return this.http.post<ApiResponse<void>>(`${this.apiUrl}/auth/resend-otp`, { email });
   }
-
   login(credentials: LoginRequest): Observable<ApiResponse<AuthResponse>> {
-    return this.http.post<ApiResponse<AuthResponse>>(`${this.apiUrl}/auth/login`, credentials).pipe(
-      tap(response => {
-        if (response.data) {
-          this.setSession(response.data);
-        }
-      })
-    );
+    return from(sealPasswords(this.transport, credentials, { password: 'sealedPassword' })).pipe(
+      switchMap(body => this.http.post<ApiResponse<AuthResponse>>(`${this.apiUrl}/auth/login`, body)),
+      tap(response => { if (response.data) this.currentUserSignal.set(response.data.user); }));
   }
-
   requestPasswordReset(email: string): Observable<ApiResponse<void>> {
     return this.http.post<ApiResponse<void>>(`${this.apiUrl}/auth/password-reset/request`, { email });
   }
-
   confirmPasswordReset(email: string, code: string, newPassword: string): Observable<ApiResponse<void>> {
-    return this.http.post<ApiResponse<void>>(`${this.apiUrl}/auth/password-reset/confirm`, { email, code, newPassword });
+    return from(sealPasswords(this.transport, { email, code, newPassword }, { newPassword: 'sealedNewPassword' })).pipe(
+      switchMap(body => this.http.post<ApiResponse<void>>(`${this.apiUrl}/auth/password-reset/confirm`, body))
+    );
   }
-
   logout(): void {
     this.sessionEnding.next();
-    if (!this.tokenSignal()) { this.clearSession(); return; }
-    this.http.post(`${this.apiUrl}/auth/logout`, {}).pipe(
+    this.http.post(`${this.apiUrl}/auth/refresh/logout`, {}).pipe(
       timeout(10000), finalize(() => this.clearSession())
     ).subscribe({ error: () => console.warn('No se pudo revocar la sesión en el servidor') });
   }
-
   handleUnauthorized(): void {
     this.clearSession();
     void this.router.navigate(['/']);
   }
-
-  /** Sincroniza el rol real del servidor con la sesión local (p. ej. tras revalidar en adminGuard). */
   syncUserRole(role: User['role']): void {
     const current = this.currentUserSignal();
-    if (!current || current.role === role) return;
-    const updated: User = { ...current, role };
-    localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
-    this.currentUserSignal.set(updated);
+    if (current) this.currentUserSignal.set({ ...current, role });
   }
-
   clearSession(): void {
     this.sessionEnding.next();
-    clearTimeout(this.expiryTimer);
-    localStorage.removeItem(this.EXPIRY_KEY);
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    this.tokenSignal.set(null);
     this.currentUserSignal.set(null);
-  }
-
-  private setSession(authData: AuthResponse): void {
-    const payload = authData.token.split('.')[1];
-    let expiry = 0;
-    try { expiry = Number(JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))).exp) * 1000; } catch { /* Invalid token: do not retain a session. */ }
-    localStorage.setItem(this.EXPIRY_KEY, String(expiry));
-    localStorage.setItem(this.TOKEN_KEY, authData.token);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(authData.user));
-    this.tokenSignal.set(authData.token);
-    this.currentUserSignal.set(authData.user);
-    this.scheduleExpiry(expiry);
-  }
-
-  private scheduleExpiry(expiry: number): void {
-    clearTimeout(this.expiryTimer);
-    if (!expiry || expiry <= Date.now()) { this.clearSession(); return; }
-    this.expiryTimer = setTimeout(() => this.scheduleExpiry(expiry), Math.min(expiry - Date.now(), 2147483647));
-  }
-
-  private getStoredToken(): string | null {
-    try {
-      return localStorage.getItem(this.TOKEN_KEY);
-    } catch {
-      return null;
-    }
-  }
-
-  private getStoredUser(): User | null {
-    try {
-      const data = localStorage.getItem(this.USER_KEY);
-      return data ? JSON.parse(data) : null;
-    } catch {
-      return null;
-    }
   }
 }

@@ -101,6 +101,10 @@
   margin: var(--ca-space-3) 0 var(--ca-space-5);
 }
 
+.otp-activate {
+  margin-top: var(--ca-space-4);
+}
+
 .otp-foot {
   display: flex;
   align-items: center;

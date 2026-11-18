@@ -10,16 +10,17 @@ export const STUDENT_DASHBOARD_URL = '/dashboard/student';
 /**
  * Protege el panel administrativo.
  *
- * El rol guardado en localStorage solo es orientación (UX): un usuario puede
- * manipularlo localmente o quedarse desactualizado si el ADMIN le cambia el
- * rol. Este guard revalida el rol real contra el servidor (GET /profile)
- * cuando el rol local no coincide con ADMIN y sincroniza el valor local.
+ * El rol en memoria solo orienta la interfaz. Se obtiene de /auth/me al arrancar;
+ * el backend valida el rol actual de la BD en cada petición protegida.
  */
 export const adminGuard: CanActivateFn = async (_route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  // inject() debe ejecutarse antes del primer await: el contexto de inyección no sobrevive.
+  const profileService = inject(ProfileService);
 
-  // 1. Sin sesión: mismo comportamiento que authGuard
+  // 1. Esperar la restauración de sesión y comprobar autenticación
+  await authService.initialize();
   if (!authService.isAuthenticated()) {
     return router.createUrlTree(['/auth/login']);
   }
@@ -30,9 +31,9 @@ export const adminGuard: CanActivateFn = async (_route, state) => {
   }
 
   // 3. El rol local no es ADMIN: preguntar al servidor antes de mostrar el panel.
-  //    El token sigue siendo necesario; si caducó, el interceptor limpia la sesión.
+  //    Si la sesión caducó, el interceptor intenta renovarla y, si falla, limpia la sesión.
   try {
-    const response = await firstValueFrom(inject(ProfileService).load());
+    const response = await firstValueFrom(profileService.load());
     const role = response.data?.role;
     if (role && authService.currentUserSignal()?.email === response.data?.email) {
       authService.syncUserRole(role);
