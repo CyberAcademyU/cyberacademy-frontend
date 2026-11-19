@@ -245,7 +245,7 @@
 
           <div class="actions">
             <button type="button" class="ca-btn" (click)="cancelCreateForm()">Cancelar</button>
-            <button type="button" class="ca-btn ca-btn--primary" [disabled]="creating()" (click)="createModule()">
+            <button type="button" class="ca-btn ca-btn--primary" [attr.aria-busy]="creating()" [disabled]="creating()" (click)="createModule()">
               {{ creating() ? 'Creando…' : 'Crear módulo' }}
             </button>
           </div>
@@ -298,8 +298,9 @@
                 <button type="button" class="ca-btn ca-btn--sm" (click)="openContentEditor(m)">
                   <ca-icon name="edit" [size]="16" /> Editar contenido
                 </button>
-                <button type="button" class="ca-btn ca-btn--quiet ca-btn--sm" (click)="toggleActive(m)">
-                  {{ m.active ? 'Ocultar a estudiantes' : 'Publicar' }}
+                <button type="button" class="ca-btn ca-btn--quiet ca-btn--sm" [disabled]="updatingVisibility() !== null"
+                        [attr.aria-busy]="updatingVisibility() === m.id" (click)="toggleActive(m)">
+                  {{ updatingVisibility() === m.id ? 'Actualizando…' : m.active ? 'Ocultar a estudiantes' : 'Publicar' }}
                 </button>
               </div>
             </article>
@@ -613,7 +614,7 @@
               </div>
 
               <div class="actions">
-                <button type="button" class="ca-btn ca-btn--primary" [disabled]="savingSectionId() === draft.sectionId"
+                <button type="button" class="ca-btn ca-btn--primary" [attr.aria-busy]="savingSectionId() === draft.sectionId" [disabled]="savingSectionId() === draft.sectionId"
                         (click)="saveSection(draft)">
                   {{ savingSectionId() === draft.sectionId ? 'Guardando…' : 'Guardar sesión' }}
                 </button>

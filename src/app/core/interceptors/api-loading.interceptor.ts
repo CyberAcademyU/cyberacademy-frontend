@@ -1,26 +1,18 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { catchError, defer, finalize, throwError, timeout, TimeoutError } from 'rxjs';
+import { catchError, throwError, timeout, TimeoutError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiLoadingService } from '../services/api-loading';
 
 // Render Free puede necesitar más de un minuto para arrancar después de inactividad.
 export const API_TIMEOUT_MS = 150_000;
 
 export const apiLoadingInterceptor: HttpInterceptorFn = (req, next) => {
-  const loading = inject(ApiLoadingService);
   const api = new URL(environment.apiUrl, window.location.origin);
   const target = new URL(req.url, window.location.origin);
   const path = api.pathname.replace(/\/$/, '');
   const isApi = target.origin === api.origin && (target.pathname === path || target.pathname.startsWith(path + '/'));
   if (!isApi || target.pathname === `${path}/modules/stream`) return next(req);
 
-  // Las lecturas muestran el estado de su propia vista (skeleton, error o vacío).
-  // El overlay se reserva para acciones como login, OTP, guardar y enviar respuestas.
-  const showOverlay = req.method !== 'GET' && target.pathname !== `${path}/auth/logout`;
-  return defer(() => {
-    if (showOverlay) loading.start();
-    return next(req).pipe(
+  return next(req).pipe(
       timeout({ each: API_TIMEOUT_MS }),
       catchError(error => {
         if (error instanceof TimeoutError) {
@@ -32,8 +24,6 @@ export const apiLoadingInterceptor: HttpInterceptorFn = (req, next) => {
           }));
         }
         return throwError(() => error);
-      }),
-      finalize(() => { if (showOverlay) loading.finish(); })
-    );
-  });
+      })
+  );
 };

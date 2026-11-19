@@ -352,16 +352,24 @@ export class AdminDashboardComponent implements OnInit {
       });
   }
 
+  readonly updatingVisibility = signal<string | null>(null);
+
   toggleActive(module: CourseModuleResponse): void {
+    if (this.updatingVisibility()) return;
+    this.updatingVisibility.set(module.id);
     this.modulesService.updateModule(module.id, { active: !module.active }).subscribe({
       next: () => {
+        this.updatingVisibility.set(null);
         this.loadModules();
         this.loadOverview();
         this.modulesMessage.set(
           `Módulo ${module.code} ${module.active ? 'oculto a los estudiantes' : 'publicado'}.`
         );
       },
-      error: (err) => this.modulesMessage.set(this.readError(err, 'No se pudo cambiar el estado del módulo.'))
+      error: (err) => {
+        this.updatingVisibility.set(null);
+        this.modulesMessage.set(this.readError(err, 'No se pudo cambiar el estado del módulo.'));
+      }
     });
   }
 
