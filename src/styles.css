@@ -11,3 +11,22 @@
 @import './styles/tokens.css';
 @import './styles/base.css';
 @import './styles/components.css';
+
+button[aria-busy="true"]::before {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex: none;
+  vertical-align: -0.15em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ca-button-spin .9s linear infinite;
+}
+button.ca-link[aria-busy="true"]::before { margin-inline-end: .45em; }
+button[aria-busy="true"] > ca-icon { display: none; }
+@keyframes ca-button-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  button[aria-busy="true"]::before { animation: none; }
+}

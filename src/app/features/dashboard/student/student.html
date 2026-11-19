@@ -228,7 +228,7 @@
           </div>
           <div class="head-actions">
             <button type="button" class="ca-icon-btn" [class.is-saved]="progress.summary.saved"
-                    [attr.aria-pressed]="progress.summary.saved" [disabled]="savingIds().has(progress.summary.moduleId)"
+                    [attr.aria-pressed]="progress.summary.saved" [attr.aria-busy]="savingIds().has(progress.summary.moduleId)" [disabled]="savingIds().has(progress.summary.moduleId)"
                     [attr.aria-label]="progress.summary.saved ? 'Quitar de guardados' : 'Guardar módulo'"
                     [title]="progress.summary.saved ? 'Quitar de guardados' : 'Guardar para después'"
                     (click)="toggleSaved(progress.summary)">
@@ -329,7 +329,7 @@
                       </button>
                     } @else {
                       <button type="button" class="ca-btn ca-btn--primary"
-                              [disabled]="!theorySelection() || checking() || !!theoryFeedback()" (click)="checkTheory()">
+                              [attr.aria-busy]="checking()" [disabled]="!theorySelection() || checking() || !!theoryFeedback()" (click)="checkTheory()">
                         {{ checking() ? 'Comprobando…' : 'Comprobar respuesta' }}
                       </button>
                     }
@@ -365,7 +365,7 @@
                       <p id="confirm-title"><strong>¿Enviar la práctica ahora?</strong> No podrás cambiar tus respuestas.</p>
                       <div class="lesson-actions">
                         <button type="button" class="ca-btn" (click)="cancelSubmitPractice()">Revisar respuestas</button>
-                        <button type="button" class="ca-btn ca-btn--primary" [disabled]="submittingPractice()"
+                        <button type="button" class="ca-btn ca-btn--primary" [attr.aria-busy]="submittingPractice()" [disabled]="submittingPractice()"
                                 (click)="submitPractice()">
                           {{ submittingPractice() ? 'Enviando…' : 'Sí, enviar práctica' }}
                         </button>
@@ -375,9 +375,9 @@
                     <div class="lesson-actions">
                       <span class="ca-field-hint ca-num">{{ answeredCount() }} de {{ content.questions.length }} respondidas</span>
                       <button type="button" class="ca-btn ca-btn--primary"
-                              [disabled]="submittingPractice() || answeredCount() < content.questions.length"
+                              [attr.aria-busy]="submittingPractice()" [disabled]="submittingPractice() || answeredCount() < content.questions.length"
                               (click)="submitPractice()">
-                        Enviar práctica
+                        {{ submittingPractice() ? 'Enviando…' : 'Enviar práctica' }}
                       </button>
                     </div>
                   }
@@ -435,7 +435,7 @@
             }
             <div class="lesson-actions">
               @if (!practiceReview()) {
-                <button type="button" class="ca-btn" [disabled]="loadingReview()"
+                <button type="button" class="ca-btn" [attr.aria-busy]="loadingReview()" [disabled]="loadingReview()"
                         (click)="loadPracticeReview(progress.summary.moduleId)">
                   {{ loadingReview() ? 'Cargando corrección…' : 'Ver corrección' }}
                 </button>
