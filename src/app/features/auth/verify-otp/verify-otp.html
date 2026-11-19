@@ -44,7 +44,7 @@
   </div>
 
   <button type="button" class="ca-btn ca-btn--primary ca-btn--block"
-          [disabled]="getOtpCode().length !== 6 || passwordForm.invalid || isLoading()" (click)="verifyCode()">
+          [attr.aria-busy]="isLoading()" [disabled]="getOtpCode().length !== 6 || passwordForm.invalid || isLoading()" (click)="verifyCode()">
     {{ isLoading() ? 'Verificando…' : 'Activar cuenta' }}
   </button>
 
@@ -55,7 +55,7 @@
     @if (cooldownSeconds() > 0) {
       <span class="ca-field-hint ca-num" aria-live="polite">Reenviar en {{ cooldownSeconds() }} s</span>
     } @else {
-      <button type="button" class="ca-link" [disabled]="isResending()" (click)="resendCode()">
+      <button type="button" class="ca-link" [attr.aria-busy]="isResending()" [disabled]="isResending()" (click)="resendCode()">
         {{ isResending() ? 'Enviando…' : 'Reenviar código' }}
       </button>
     }

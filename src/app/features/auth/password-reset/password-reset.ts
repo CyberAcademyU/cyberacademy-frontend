@@ -23,7 +23,7 @@ import { transientMessage } from '../../../shared/ui/transient-message';
           <div class="ca-field"><label for="reset-email">Correo</label>
             <input id="reset-email" class="ca-input" type="email" autocomplete="email" formControlName="email" />
           </div>
-          <button class="ca-btn ca-btn--primary ca-btn--block" type="submit" [disabled]="requestForm.invalid || sending()">{{ sending() ? 'Enviando…' : 'Enviar código' }}</button>
+          <button class="ca-btn ca-btn--primary ca-btn--block" type="submit" [attr.aria-busy]="sending()" [disabled]="requestForm.invalid || sending()">{{ sending() ? 'Enviando…' : 'Enviar código' }}</button>
         </form>
       } @else {
         <form class="form" [formGroup]="confirmForm" (ngSubmit)="confirm()">
@@ -40,7 +40,7 @@ import { transientMessage } from '../../../shared/ui/transient-message';
               <span class="ca-field-error">Las contraseñas no coinciden.</span>
             }
           </div>
-          <button class="ca-btn ca-btn--primary ca-btn--block" type="submit" [disabled]="confirmForm.invalid || sending()">{{ sending() ? 'Actualizando…' : 'Cambiar contraseña' }}</button>
+          <button class="ca-btn ca-btn--primary ca-btn--block" type="submit" [attr.aria-busy]="sending()" [disabled]="confirmForm.invalid || sending()">{{ sending() ? 'Actualizando…' : 'Cambiar contraseña' }}</button>
           <button class="ca-link" type="button" (click)="startOver()">Solicitar otro código</button>
         </form>
       }

@@ -48,7 +48,7 @@ import { transientMessage } from '../../shared/ui/transient-message';
           <div class="ca-alert ca-alert--threat" role="alert">{{ message }}</div>
         }
 
-        <button type="submit" class="ca-btn" [disabled]="sending()">
+        <button type="submit" class="ca-btn" [attr.aria-busy]="sending()" [disabled]="sending()">
           {{ sending() ? 'Actualizando…' : 'Cambiar contraseña' }}
         </button>
       </form>
