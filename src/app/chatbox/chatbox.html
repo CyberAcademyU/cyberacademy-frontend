@@ -19,73 +19,32 @@
         </button>
       </header>
 
-      <div class="rocu-body">
-        @if (selectedGuide(); as guide) {
-          <button class="rocu-back" type="button" (click)="reset()">
-            <span aria-hidden="true">←</span> Ver otras situaciones
-          </button>
-          <div class="rocu-message">
-            <span class="rocu-speaker">Rocu</span>
-            <h2>{{ guide.title }}</h2>
-            <p>{{ guide.intro }}</p>
-          </div>
-          @if (guide.id === 'phishing' && !phishingChoice()) {
-            <p class="rocu-question">¿Qué hiciste después de abrir el enlace?</p>
-            <div class="rocu-options">
-              @for (choice of phishingChoices; track choice.label) {
-                <button type="button" (click)="selectPhishingChoice(choice)">
-                  <span>{{ choice.label }}</span><span class="rocu-arrow" aria-hidden="true">↗</span>
-                </button>
-              }
-            </div>
-          } @else {
-            @if (guide.id === 'phishing') {
-              <button class="rocu-back rocu-choice-back" type="button" (click)="selectPhishingChoice(null)">← Cambiar respuesta</button>
-            }
-            <p class="rocu-check-hint">Marca los pasos que hayas realizado, si te sirve.</p>
-            <ol class="rocu-steps">
-              @for (step of (phishingChoice()?.steps ?? guide.steps); track $index) {
-                <li>
-                  <label class="rocu-step" [class.is-complete]="completedSteps().has($index)">
-                    <input type="checkbox" [checked]="completedSteps().has($index)"
-                           (change)="toggleStep($index, $any($event.target).checked)" />
-                    <span>{{ step }}</span>
-                  </label>
-                </li>
-              }
-            </ol>
-            <p class="rocu-check-note">Las marcas se borran al cerrar o cambiar de guía.</p>
-            <p class="rocu-note">Esta guía es orientación inicial y no sustituye la ayuda de un profesional.</p>
-            <button class="rocu-reset" type="button" (click)="reset()">Empezar de nuevo</button>
-          }
-        } @else {
-          <div class="rocu-message">
-            <span class="rocu-speaker">Rocu</span>
-            <h2>Estoy aquí para ayudarte.</h2>
-            <p>Si algo sospechoso acaba de pasar, respira. Vamos paso a paso.</p>
-          </div>
-          <button class="rocu-urgent" type="button" (click)="selectGuide(urgentGuide)">
-            <span aria-hidden="true">!</span>
-            <span><strong>Necesito ayuda urgente</strong><small>Dinero en riesgo, amenazas o peligro físico</small></span>
-            <span class="rocu-urgent-arrow" aria-hidden="true">→</span>
-          </button>
-          <p class="rocu-question">¿Qué ocurrió?</p>
-          <label class="rocu-search-label" for="rocu-search">Buscar una situación</label>
-          <input id="rocu-search" class="rocu-search" type="search" placeholder="Ej. WhatsApp, SMS, contraseña"
-                 [value]="search()" (input)="search.set($any($event.target).value)" autocomplete="off" />
-          <div class="rocu-options">
-            @for (guide of filteredGuides(); track guide.id) {
-              <button type="button" (click)="selectGuide(guide)">
-                <span>{{ guide.label }}</span><span class="rocu-arrow" aria-hidden="true">↗</span>
-              </button>
-            } @empty {
-              <p class="rocu-empty">No encontré esa situación. Prueba con otra palabra o busca ayuda de confianza.</p>
-            }
-          </div>
-          <p class="rocu-privacy"><span aria-hidden="true">✦</span> No compartas contraseñas, códigos ni datos bancarios.</p>
+      <details class="rocu-help">
+        <summary>Necesito ayuda urgente</summary>
+        <p>Si hay peligro físico inmediato, contacta a emergencias locales. Si hay dinero en riesgo, llama al banco al número de tu tarjeta. Ante amenazas, busca apoyo de una persona de confianza.</p>
+      </details>
+      <div class="rocu-body" #transcript role="log" aria-label="Conversación con Rocu" aria-live="polite">
+        @if (!turns().length && !pending()) {
+          <div class="rocu-message"><h2>¿Qué ocurrió?</h2><p>Cuéntame la situación en tus palabras.</p></div>
+        }
+        @for (turn of turns(); track $index) {
+          <p class="rocu-turn"><strong>Tú</strong>{{ turn.question }}</p>
+          <p class="rocu-turn"><strong>Rocu</strong>{{ turn.answer }}</p>
+        }
+        @if (pending()) {
+          <p class="rocu-turn"><strong>Tú</strong>{{ pending() }}</p>
+          <p class="rocu-note">Rocu está respondiendo…</p>
         }
       </div>
-      <footer class="rocu-footer">Guía automatizada · No recopila datos</footer>
+      <div class="rocu-compose">
+        <label for="rocu-message">Tu mensaje</label>
+        <textarea id="rocu-message" rows="2" maxlength="1200" [disabled]="!!pending()" [value]="draft()"
+                  (input)="draft.set($any($event.target).value)" aria-describedby="rocu-privacy"></textarea>
+        <p id="rocu-privacy">Al enviar, Google Gemini procesa tu mensaje y el contexto reciente. No escribas contraseñas, códigos ni datos personales. La IA puede equivocarse.</p>
+        @if (error()) { <p role="alert">{{ error() }}</p> }
+        <button type="button" class="ca-btn ca-btn--primary" [disabled]="!draft().trim() || !!pending()"
+                [attr.aria-busy]="!!pending()" (click)="send()">{{ pending() ? 'Enviando…' : 'Enviar' }}</button>
+      </div>
     </section>
   }
 
