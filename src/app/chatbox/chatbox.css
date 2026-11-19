@@ -41,6 +41,16 @@
 .rocu-close:hover { background: var(--ca-raised); }
 .rocu-close svg { width: 18px; height: 18px; }
 .rocu-body { overflow-y: auto; overscroll-behavior: contain; padding: 18px 16px; }
+.rocu-panel { overflow-y: auto; }
+.rocu-help, .rocu-compose { padding: 10px 16px; }
+.rocu-help summary { color: var(--ca-warn); cursor: pointer; }
+.rocu-help p, .rocu-compose p { font-size: 12px; color: var(--ca-text-dim); line-height: 1.45; }
+.rocu-body { min-height: 72px; }
+.rocu-turn { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 12px; }
+.rocu-turn strong { display: block; color: var(--ca-signal); font-size: 12px; }
+.rocu-compose { border-top: 1px solid var(--ca-line); }
+.rocu-compose label { display: block; font-weight: 600; }
+.rocu-compose textarea { width: 100%; resize: vertical; max-height: 120px; padding: 8px; font: inherit; color: var(--ca-text); background: var(--ca-deck); border: 1px solid var(--ca-line-strong); border-radius: 8px; }
 .rocu-message { padding: 14px 15px; border: 1px solid var(--ca-line-strong); border-radius: 4px 14px 14px 14px; background: var(--ca-raised); }
 .rocu-speaker { color: var(--ca-signal); font-size: 12px; font-weight: 700; }
 .rocu-message h2 { margin: 7px 0 6px; font-size: 17px; line-height: 1.3; }
