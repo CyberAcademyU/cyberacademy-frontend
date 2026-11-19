@@ -94,7 +94,7 @@ const BIO_MAX = 280;
 
         <div class="ca-dialog-foot">
           <button type="button" class="ca-btn" (click)="cancel.emit()">Cancelar</button>
-          <button type="submit" class="ca-btn ca-btn--primary" [disabled]="saving()">
+          <button type="submit" class="ca-btn ca-btn--primary" [attr.aria-busy]="saving()" [disabled]="saving()">
             {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
           </button>
         </div>

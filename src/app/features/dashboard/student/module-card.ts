@@ -18,7 +18,7 @@ import { ModuleCoverComponent } from '../../../shared/ui/module-cover';
     <div class="top">
       <span class="ca-code">{{ module().code }}</span>
       <button type="button" class="ca-icon-btn save" [class.is-saved]="module().saved"
-              [attr.aria-pressed]="module().saved" [disabled]="saving()"
+              [attr.aria-pressed]="module().saved" [attr.aria-busy]="saving()" [disabled]="saving()"
               [attr.aria-label]="(module().saved ? 'Quitar de guardados: ' : 'Guardar módulo: ') + module().title"
               [title]="module().saved ? 'Quitar de guardados' : 'Guardar para después'"
               (click)="toggleSave.emit()">

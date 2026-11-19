@@ -35,7 +35,7 @@
   } @else {
     <div class="form">
       <p>Enviaremos el código a <strong>{{ f['email'].value }}</strong>. ¿El correo está bien escrito?</p>
-      <button type="button" class="ca-btn ca-btn--primary ca-btn--block" [disabled]="isLoading()" (click)="confirmRegistration()">
+      <button type="button" class="ca-btn ca-btn--primary ca-btn--block" [attr.aria-busy]="isLoading()" [disabled]="isLoading()" (click)="confirmRegistration()">
         {{ isLoading() ? 'Enviando código…' : 'Sí, enviar código' }}
       </button>
       <button type="button" class="ca-btn ca-btn--quiet ca-btn--block" [disabled]="isLoading()" (click)="confirming.set(false)">Editar correo</button>
