@@ -7,6 +7,7 @@ import { GoogleButtonComponent } from './google-button';
 
 describe('GoogleButtonComponent', () => {
   let callback: (result: { credential: string }) => void;
+  let renderedText: string;
   const auth = {
     googleChallenge: vi.fn(),
     googleLogin: vi.fn(),
@@ -22,7 +23,8 @@ describe('GoogleButtonComponent', () => {
       configurable: true,
       value: { accounts: { id: {
         initialize: (config: { callback: typeof callback }) => { callback = config.callback; },
-        renderButton: (element: HTMLElement) => {
+        renderButton: (element: HTMLElement, options: { text: string }) => {
+          renderedText = options.text;
           element.replaceChildren(document.createElement('iframe'));
         },
       } } },
@@ -46,6 +48,21 @@ describe('GoogleButtonComponent', () => {
     const slots = fixture.nativeElement.querySelectorAll('.google-slot');
     expect(slots.length).toBe(1);
     expect(slots[0].parentElement.classList.contains('google-wrap')).toBe(true);
+  });
+
+  it('muestra Regístrate con Google en registro y configura signup_with', () => {
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.componentRef.setInput('signup', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Regístrate con Google');
+    expect(renderedText).toBe('signup_with');
+  });
+
+  it('conserva Continuar con Google en inicio de sesión y vinculación', () => {
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Continuar con Google');
+    expect(renderedText).toBe('continue_with');
   });
 
   it('oculta el error a los 3 segundos y conserva Google para otro intento', () => {
