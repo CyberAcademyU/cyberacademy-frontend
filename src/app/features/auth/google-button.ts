@@ -50,8 +50,7 @@ interface Identity {
         Tu cuenta de Google está vinculada.
       </p>
     }
-    @if (message()) { <p role="status">{{ message() }}</p> }
-    @if (retry()) { <button class="ca-link" type="button" (click)="prepare()">Reintentar con Google</button> }
+    @if (message()) { <p class="message-error" role="status">{{ message() }}</p> }
   `,
   styles: `
     :host { display: grid; justify-items: stretch; width: 100%; gap: .4rem; margin-block: var(--ca-space-4) 0; }
@@ -129,7 +128,6 @@ export class GoogleButtonComponent implements AfterViewInit {
   readonly linked = output<void>();
   readonly message = signal('');
   readonly busy = signal(false);
-  readonly retry = signal(false);
   readonly justLinked = signal(false);
   private readonly button = viewChild.required<ElementRef<HTMLElement>>('button');
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -140,8 +138,11 @@ export class GoogleButtonComponent implements AfterViewInit {
   private ready = false;
   private hideTimer?: ReturnType<typeof setTimeout>;
 
+  private hideMessageTimer?: ReturnType<typeof setTimeout>;
+
   ngAfterViewInit() {
     this.destroy.onDestroy(() => clearTimeout(this.hideTimer));
+    this.destroy.onDestroy(() => clearTimeout(this.hideMessageTimer));
     if (typeof ResizeObserver !== 'undefined') {
       const observer = new ResizeObserver(() => {
         if (this.ready) this.render();
@@ -170,7 +171,6 @@ export class GoogleButtonComponent implements AfterViewInit {
     const identity = this.identity();
     if (!identity) return;
     this.ready = false;
-    this.retry.set(false);
     this.message.set('');
     this.auth.googleChallenge().pipe(takeUntilDestroyed(this.destroy)).subscribe({
       next: challenge => {
@@ -220,9 +220,12 @@ export class GoogleButtonComponent implements AfterViewInit {
 
   private failed(message?: string) {
     this.busy.set(false);
-    this.ready = false;
-    this.button().nativeElement.replaceChildren();
+    this.ready = true;
+    clearTimeout(this.hideMessageTimer);
     this.message.set(message || 'No se pudo iniciar la conexión con Google.');
-    this.retry.set(true);
+    // Ocultar el mensaje después de 3 segundos sin necesidad de botón de reintentar
+    this.hideMessageTimer = setTimeout(() => {
+      this.message.set('');
+    }, 3000);
   }
 }
