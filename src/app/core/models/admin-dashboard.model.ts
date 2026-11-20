@@ -6,6 +6,8 @@ export interface StudentOverview {
   firstName: string;
   lastName: string;
   email: string;
+  avatar?: string | null;
+  photoUrl?: string | null;
   status: UserStatus;
   modulesCompleted: number;
   modulesTotal: number;

@@ -22,6 +22,7 @@ import { transientMessage } from '../../../shared/ui/transient-message';
 import { LineChartComponent, LinePoint } from '../../../shared/ui/line-chart';
 import { BarChartComponent, BarGroup, BarSeries } from '../../../shared/ui/bar-chart';
 import { ProfileComponent } from '../../profile/profile';
+import { AvatarComponent } from '../../../shared/ui/avatar';
 
 interface OptionDraft {
   text: string;
@@ -61,7 +62,8 @@ interface SectionDraft {
     CoverPickerComponent,
     LineChartComponent,
     BarChartComponent,
-    ProfileComponent
+    ProfileComponent,
+    AvatarComponent
   ],
   host: { '(document:keydown.escape)': 'onEscape()' },
   templateUrl: './admin.html',

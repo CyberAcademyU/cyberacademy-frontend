@@ -11,6 +11,7 @@ import { ActivityHeatmapComponent } from '../../shared/ui/activity-heatmap';
 import { IconComponent } from '../../shared/ui/icon';
 import { ProfileEditDialogComponent } from './profile-edit-dialog';
 import { PasswordFormComponent } from './password-form';
+import { ProfilePictureComponent } from './profile-picture';
 import { transientMessage } from '../../shared/ui/transient-message';
 
 interface ChecklistItem {
@@ -31,7 +32,8 @@ interface ChecklistItem {
     ActivityHeatmapComponent,
     IconComponent,
     ProfileEditDialogComponent,
-    PasswordFormComponent
+    PasswordFormComponent,
+    ProfilePictureComponent
   ],
   host: { '(document:keydown.escape)': 'editing.set(false)', '[class.is-embedded]': 'embedded()' },
   templateUrl: './profile.html',
@@ -62,7 +64,7 @@ export class ProfileComponent implements OnInit {
     const p = this.profile();
     if (!p) return [];
     const identityItems = [
-      { label: 'Elige un avatar', done: !!p.avatar },
+      { label: 'Elige un avatar o foto', done: !!p.avatar || !!p.photoUrl },
       { label: 'Elige tu alias público', done: !!p.displayName },
       { label: 'Escribe tu biografía', done: !!p.bio },
     ];

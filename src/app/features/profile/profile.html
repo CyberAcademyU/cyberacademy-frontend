@@ -13,7 +13,8 @@
   } @else if (profile(); as p) {
     <!-- Identidad -->
     <section class="identity" aria-labelledby="profile-name">
-      <ca-avatar class="identity-avatar" [avatar]="p.avatar" [name]="p.publicName" [size]="112" />
+      <ca-avatar class="identity-avatar" [avatar]="p.role === 'STUDENT' ? p.avatar : null" [photoUrl]="p.photoUrl"
+                 [empty]="p.role === 'ADMIN'" [name]="p.publicName" [size]="112" />
       <div class="identity-copy">
         <h1 id="profile-name">{{ p.publicName }}</h1>
         <p class="identity-meta">
@@ -134,6 +135,7 @@
         <!-- Cuenta -->
         <section class="ca-panel card" aria-labelledby="account-title">
           <h2 id="account-title">Cuenta y seguridad</h2>
+          <app-profile-picture />
           <dl class="account">
             <div><dt>Correo</dt><dd>{{ p.email }}</dd></div>
             <div><dt>Nombre completo</dt><dd>{{ p.firstName }} {{ p.lastName }}</dd></div>
