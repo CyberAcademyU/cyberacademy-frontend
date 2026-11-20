@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { GoogleButtonComponent } from '../google-button';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
@@ -11,7 +12,7 @@ import { transientMessage } from '../../../shared/ui/transient-message';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, AuthShellComponent, IconComponent, RevealPasswordDirective, RouterLink],
+  imports: [ReactiveFormsModule, AuthShellComponent, IconComponent, RevealPasswordDirective, RouterLink, GoogleButtonComponent],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })

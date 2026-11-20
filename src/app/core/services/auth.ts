@@ -83,6 +83,13 @@ export class AuthService {
       switchMap(body => this.http.post<ApiResponse<AuthResponse>>(`${this.apiUrl}/auth/login`, body)),
       tap(response => { if (response.data) this.currentUserSignal.set(response.data.user); }));
   }
+  googleChallenge() {
+    return this.http.post<{clientId: string; nonce: string}>(`${this.apiUrl}/auth/google/challenge`, {});
+  }
+  googleLogin(credential: string, link: boolean) {
+    return this.http.post<ApiResponse<AuthResponse>>(`${this.apiUrl}/auth/google${link ? '/link' : ''}`, {credential})
+      .pipe(tap(response => { if (response.data) this.currentUserSignal.set(response.data.user); }));
+  }
   requestPasswordReset(email: string): Observable<ApiResponse<void>> {
     return this.http.post<ApiResponse<void>>(`${this.apiUrl}/auth/password-reset/request`, { email });
   }

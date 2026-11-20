@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { GoogleButtonComponent } from '../auth/google-button';
 import { ProfileService } from '../../core/services/profile';
 import { Badge } from '../../core/models/profile.model';
 import { AppHeaderComponent } from '../../shared/ui/app-header';
@@ -22,6 +23,7 @@ interface ChecklistItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
+    GoogleButtonComponent,
     AppHeaderComponent,
     AvatarComponent,
     LeagueEmblemComponent,
