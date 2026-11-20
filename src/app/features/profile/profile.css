@@ -3,12 +3,21 @@
   min-height: 100dvh;
 }
 
+:host(.is-embedded) {
+  min-height: auto;
+}
+
 .page {
   display: grid;
   gap: var(--ca-space-5);
   width: min(100% - 2 * var(--ca-space-4), 1180px);
   margin-inline: auto;
   padding: var(--ca-space-7) 0 var(--ca-space-8);
+}
+
+.page--embedded {
+  width: 100%;
+  padding: 0;
 }
 
 .identity-skeleton {

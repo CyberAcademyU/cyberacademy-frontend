@@ -1,6 +1,8 @@
-<ca-app-header />
+@if (!embedded()) {
+  <ca-app-header />
+}
 
-<main class="page">
+<div class="page" [class.page--embedded]="embedded()" [attr.role]="embedded() ? null : 'main'">
   @if (loading() && !profile()) {
     <div class="ca-skeleton identity-skeleton"></div>
   } @else if (error() && !profile()) {
@@ -17,7 +19,9 @@
         <p class="identity-meta">
           <span><ca-icon name="history" [size]="15" /> Desde {{ memberSince() }}</span>
           @if (p.country) { <span><ca-icon name="pin" [size]="15" /> {{ p.country }}</span> }
-          @if (!p.showInLeaderboard) { <span><ca-icon name="eye-off" [size]="15" /> Oculto en la clasificación</span> }
+          @if (p.role === 'ADMIN') {
+            <span>Administrador</span>
+          } @else if (!p.showInLeaderboard) { <span><ca-icon name="eye-off" [size]="15" /> Oculto en la clasificación</span> }
         </p>
         @if (p.bio) {
           <p class="identity-bio">{{ p.bio }}</p>
@@ -33,6 +37,7 @@
     }
 
     <!-- Cifras -->
+    @if (p.role !== 'ADMIN') {
     <dl class="stats ca-panel">
       <div class="stat stat--league">
         <ca-league-emblem [code]="p.league.code" [size]="40" />
@@ -62,6 +67,7 @@
         <dd class="ca-stat-value ca-num">{{ p.modulesCompleted }}<span class="of">/{{ p.modulesTotal }}</span></dd>
       </div>
     </dl>
+    }
 
     <div class="columns">
       <div class="column">
@@ -85,6 +91,7 @@
         }
 
         <!-- Insignias -->
+        @if (p.role !== 'ADMIN') {
         <section class="ca-panel card" aria-labelledby="badges-title">
           <div class="card-head">
             <h2 id="badges-title">Insignias</h2>
@@ -103,10 +110,12 @@
             }
           </ul>
         </section>
+        }
       </div>
 
       <div class="column">
         <!-- Actividad -->
+        @if (p.role !== 'ADMIN') {
         <section class="ca-panel card" aria-labelledby="activity-title">
           <div class="card-head">
             <h2 id="activity-title">Actividad del último año</h2>
@@ -118,6 +127,7 @@
             Tu mejor racha: <span class="ca-num">{{ p.longestStreak }}</span> {{ p.longestStreak === 1 ? 'día' : 'días' }} seguidos.
           </p>
         </section>
+        }
 
         <!-- Cuenta -->
         <section class="ca-panel card" aria-labelledby="account-title">
@@ -125,6 +135,9 @@
           <dl class="account">
             <div><dt>Correo</dt><dd>{{ p.email }}</dd></div>
             <div><dt>Nombre completo</dt><dd>{{ p.firstName }} {{ p.lastName }}</dd></div>
+            <div><dt>Rol</dt><dd>{{ p.role === 'ADMIN' ? 'Administrador' : 'Estudiante' }}</dd></div>
+            <div><dt>Google</dt><dd>{{ p.googleLinked ? 'Cuenta vinculada' : 'Sin vincular' }}</dd></div>
+            @if (p.role !== 'ADMIN') {
             <div>
               <dt>Clasificación</dt>
               <dd>
@@ -132,6 +145,7 @@
                 <a routerLink="/dashboard/leaderboard" class="ca-link">Ver clasificación</a>
               </dd>
             </div>
+            }
           </dl>
           <h3 class="subhead"><ca-icon name="key" [size]="16" /> Cambiar contraseña</h3>
           <app-password-form />
@@ -147,4 +161,4 @@
       <app-profile-edit-dialog [profile]="p" (saved)="onSaved()" (cancel)="editing.set(false)" />
     }
   }
-</main>
+</div>

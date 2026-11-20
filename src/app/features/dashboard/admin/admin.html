@@ -19,6 +19,11 @@
               [attr.aria-current]="activeTab() === 'usuarios' ? 'page' : null" (click)="selectTab('usuarios')">
         <ca-icon name="users" /> <span>Estudiantes</span>
       </button>
+      <button type="button" class="nav-item" aria-label="Mi perfil" title="Mi perfil"
+              [class.is-active]="activeTab() === 'perfil'"
+              [attr.aria-current]="activeTab() === 'perfil' ? 'page' : null" (click)="selectTab('perfil')">
+        <ca-icon name="users" /> <span>Mi perfil</span>
+      </button>
     </nav>
 
     <div class="sidebar-foot">
@@ -30,6 +35,9 @@
   </aside>
 
   <main class="main">
+    @if (activeTab() === 'perfil') {
+      <app-profile [embedded]="true" />
+    }
     @if (exportSuccess()) {
       <div class="ca-alert ca-alert--secure toast" role="status">
         <span>Descargaste <strong>resultados_estudiantes_cyberacademy.csv</strong>.</span>
