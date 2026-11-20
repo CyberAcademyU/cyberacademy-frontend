@@ -126,6 +126,7 @@ interface Identity {
 export class GoogleButtonComponent implements AfterViewInit {
   readonly link = input(false);
   readonly linked = output<void>();
+  readonly linkSucceeded = output<void>();
   readonly message = signal('');
   readonly busy = signal(false);
   readonly justLinked = signal(false);
@@ -184,6 +185,7 @@ export class GoogleButtonComponent implements AfterViewInit {
                 this.ready = false;
                 this.button().nativeElement.replaceChildren();
                 this.justLinked.set(true);
+                this.linkSucceeded.emit();
                 // El aviso se muestra 3 s y después el perfil oculta la sección.
                 this.hideTimer = setTimeout(() => {
                   this.justLinked.set(false);
