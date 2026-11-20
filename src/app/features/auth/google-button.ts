@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, DestroyRef, ElementRef, inject, input, signal, viewChild } from '@angular/core';
+import { AfterViewInit, Component, DestroyRef, ElementRef, inject, input, output, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth';
@@ -19,7 +19,17 @@ interface Identity {
 @Component({
   selector: 'ca-google-button',
   template: `
-    <div #button class="google-slot" [hidden]="busy()"></div>
+    <div #button class="google-slot" [hidden]="busy() || justLinked()"></div>
+    @if (justLinked()) {
+      <p class="verified" role="status">
+        <span class="verified-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+        Tu cuenta de Google está vinculada.
+      </p>
+    }
     @if (busy()) { <p role="status">Verificando con Google…</p> }
     @if (message()) { <p role="status">{{ message() }}</p> }
     @if (retry()) { <button class="ca-link" type="button" (click)="prepare()">Reintentar con Google</button> }
@@ -28,13 +38,33 @@ interface Identity {
     :host { display: grid; justify-items: stretch; width: 100%; gap: .4rem; margin-block: .25rem 0; }
     .google-slot { width: 100%; min-height: 40px; }
     p { margin: 0; }
+    .verified {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      color: var(--ca-secure);
+      font-size: var(--ca-text-sm);
+    }
+    .verified-icon {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--ca-secure);
+      color: var(--ca-void);
+    }
+    .verified-icon svg { width: 14px; height: 14px; }
   `,
 })
 export class GoogleButtonComponent implements AfterViewInit {
   readonly link = input(false);
+  readonly linked = output<void>();
   readonly message = signal('');
   readonly busy = signal(false);
   readonly retry = signal(false);
+  readonly justLinked = signal(false);
   private readonly button = viewChild.required<ElementRef<HTMLElement>>('button');
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly auth = inject(AuthService);
@@ -42,8 +72,10 @@ export class GoogleButtonComponent implements AfterViewInit {
   private readonly destroy = inject(DestroyRef);
   private identityApi?: Identity;
   private ready = false;
+  private hideTimer?: ReturnType<typeof setTimeout>;
 
   ngAfterViewInit() {
+    this.destroy.onDestroy(() => clearTimeout(this.hideTimer));
     if (typeof ResizeObserver !== 'undefined') {
       const observer = new ResizeObserver(() => {
         if (this.ready) this.render();
@@ -85,7 +117,12 @@ export class GoogleButtonComponent implements AfterViewInit {
               if (this.link()) {
                 this.ready = false;
                 this.button().nativeElement.replaceChildren();
-                this.message.set('Tu cuenta de Google está vinculada.');
+                this.justLinked.set(true);
+                // El aviso se muestra 3 s y después el perfil oculta la sección.
+                this.hideTimer = setTimeout(() => {
+                  this.justLinked.set(false);
+                  this.linked.emit();
+                }, 3000);
               } else void this.router.navigate([response.data?.user.role === 'ADMIN' ? '/dashboard/admin' : '/dashboard/student']);
             },
             error: err => this.failed(err.error?.message),
