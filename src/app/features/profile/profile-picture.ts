@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { AvatarComponent, AVATARS, AVATAR_IDS } from '../../shared/ui/avatar';
@@ -62,6 +62,7 @@ export class ProfilePictureComponent {
   private destroy = inject(DestroyRef);
   readonly profile = this.service.profile;
   readonly busy = signal(false);
+  readonly busyChange = output<boolean>();
   readonly error = signal('');
   readonly notice = signal('');
   readonly avatarIds = AVATAR_IDS;
@@ -81,12 +82,14 @@ export class ProfilePictureComponent {
   choose(id: string) { if (!this.busy()) this.save(this.service.chooseAvatar(id), 'Avatar actualizado.'); }
   private save(request: Observable<ApiResponse<Profile>>, message: string) {
     this.busy.set(true);
+    this.busyChange.emit(true);
     this.error.set('');
     this.notice.set('');
     request.pipe(takeUntilDestroyed(this.destroy)).subscribe({
-      next: () => { this.busy.set(false); this.notice.set(message); },
+      next: () => { this.busy.set(false); this.busyChange.emit(false); this.notice.set(message); },
       error: err => {
         this.busy.set(false);
+        this.busyChange.emit(false);
         this.error.set(err.status === 413 ? 'La foto supera el límite de 2 MB.' : err.error?.message || 'No se pudo actualizar la imagen. Intenta de nuevo.');
       },
     });
