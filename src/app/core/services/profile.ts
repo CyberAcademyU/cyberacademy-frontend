@@ -52,6 +52,26 @@ export class ProfileService {
     );
   }
 
+  uploadPhoto(file: File): Observable<ApiResponse<Profile>> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<ApiResponse<Profile>>(`${this.apiUrl}/profile/photo`, body).pipe(
+      tap(res => this.profile.set(res.data ?? null))
+    );
+  }
+
+  removePhoto(): Observable<ApiResponse<Profile>> {
+    return this.http.delete<ApiResponse<Profile>>(`${this.apiUrl}/profile/photo`).pipe(
+      tap(res => this.profile.set(res.data ?? null))
+    );
+  }
+
+  chooseAvatar(avatar: string): Observable<ApiResponse<Profile>> {
+    return this.http.put<ApiResponse<Profile>>(`${this.apiUrl}/profile/avatar`, { avatar }).pipe(
+      tap(res => this.profile.set(res.data ?? null))
+    );
+  }
+
   /** Tras el cambio el backend invalida todas las sesiones, incluida esta. */
   changePassword(data: ChangePasswordRequest): Observable<ApiResponse<void>> {
     return from(sealPasswords(this.transport, data, {
