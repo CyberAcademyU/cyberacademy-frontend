@@ -94,6 +94,12 @@
   padding: var(--ca-space-6) clamp(var(--ca-space-4), 3vw, var(--ca-space-7)) var(--ca-space-8);
 }
 
+.student-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--ca-space-3);
+}
+
 .toast {
   position: fixed;
   right: var(--ca-space-4);

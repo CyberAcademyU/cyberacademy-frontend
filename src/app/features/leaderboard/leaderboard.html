@@ -30,7 +30,7 @@
           </div>
         } @else if (b.me; as me) {
           <div class="ca-panel me-strip">
-            <ca-avatar [avatar]="me.avatar" [name]="me.name" [size]="44" />
+            <ca-avatar [avatar]="me.avatar" [photoUrl]="me.photoUrl" [name]="me.name" [size]="44" />
             <div class="me-copy">
               <strong>
                 @if (me.rank) {
@@ -77,7 +77,7 @@
               <li class="row" [class.is-me]="entry.me" [class.is-top]="entry.rank !== null && entry.rank <= 3">
                 <span class="rank ca-num" [attr.aria-label]="'Puesto ' + entry.rank">{{ entry.rank }}</span>
                 <span class="who">
-                  <ca-avatar [avatar]="entry.avatar" [name]="entry.name" [size]="36" />
+                  <ca-avatar [avatar]="entry.avatar" [photoUrl]="entry.photoUrl" [name]="entry.name" [size]="36" />
                   <span class="name">{{ entry.name }}</span>
                   @if (entry.me) { <span class="ca-badge ca-badge--signal you">Tú</span> }
                 </span>

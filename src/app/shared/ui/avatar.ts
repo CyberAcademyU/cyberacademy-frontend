@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { environment } from '../../../environments/environment';
 
 interface AvatarPalette {
   name: string;
@@ -7,7 +8,7 @@ interface AvatarPalette {
   accent: string;
 }
 
-/** Catálogo cerrado de avatares (el backend solo acepta estos ids: no hay subida de imágenes). */
+/** Catálogo cerrado de avatares, alternativo a una foto de perfil. */
 export const AVATARS: Record<string, AvatarPalette> = {
   'op-01': { name: 'Visor', bg: ['#0f2a44', '#07121f'], body: '#c9d6ea', accent: '#3ee6ff' },
   'op-02': { name: 'Capucha', bg: ['#2a1640', '#0b0717'], body: '#6d4fa8', accent: '#41f5a0' },
@@ -29,7 +30,10 @@ let nextId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { 'aria-hidden': 'true', '[style.--size.px]': 'size()' },
   template: `
-    @if (palette(); as p) {
+    @if (photoSource(); as source) {
+      <img [src]="source" alt="" [attr.width]="size()" [attr.height]="size()"
+           loading="lazy" decoding="async" (error)="failedPhoto.set(source)" />
+    } @else if (palette(); as p) {
       <svg viewBox="0 0 64 64" [attr.width]="size()" [attr.height]="size()"
            [style.--body]="p.body" [style.--accent]="p.accent">
         <defs>
@@ -93,6 +97,8 @@ let nextId = 0;
           }
         }
       </svg>
+    } @else if (empty()) {
+      <span class="initials"></span>
     } @else {
       <span class="initials">{{ initials() }}</span>
     }
@@ -109,6 +115,7 @@ let nextId = 0;
       box-shadow: 0 0 0 1px var(--ca-line-strong);
     }
     svg { display: block; width: 100%; height: 100%; }
+    img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .body { fill: var(--body); }
     .dim { opacity: 0.55; }
     .accent { fill: var(--accent); }
@@ -141,6 +148,16 @@ export class AvatarComponent {
   avatar = input<string | null | undefined>(null);
   name = input('');
   size = input(40);
+  photoUrl = input<string | null | undefined>(null);
+  empty = input(false);
+  protected failedPhoto = signal('');
+  protected photoSource = computed(() => {
+    const path = this.photoUrl();
+    // Solo rutas del backend: no permitir enlaces externos ni data/SVG.
+    if (!path || !/^\/profile\/photos\/[0-9a-f-]{36}$/i.test(path)) return null;
+    const source = environment.apiUrl.replace(/\/$/, '') + path;
+    return this.failedPhoto() === source ? null : source;
+  });
 
   protected readonly gradientId = `ca-avatar-${nextId++}`;
   protected palette = computed(() => {
