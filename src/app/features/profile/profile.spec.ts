@@ -8,11 +8,17 @@ import { ProfileService } from '../../core/services/profile';
 import { Profile } from '../../core/models/profile.model';
 import { AuthService } from '../../core/services/auth';
 import { GoogleButtonComponent } from '../auth/google-button';
+import { ProfileEditDialogComponent } from './profile-edit-dialog';
+import { ProfilePictureComponent } from './profile-picture';
+import { vi } from 'vitest';
 
 describe('perfil del administrador dentro del panel', () => {
   const profile = signal<Profile | null>(null);
+  const update = vi.fn();
 
   beforeEach(() => {
+    update.mockReset();
+    update.mockImplementation(() => of({ data: profile() }));
     profile.set({
       id: 'admin', role: 'ADMIN', email: 'admin@gmail.com', googleLinked: false,
       firstName: 'Miguel', lastName: 'Talavera', publicName: 'Miguel',
@@ -27,7 +33,7 @@ describe('perfil del administrador dentro del panel', () => {
       imports: [ProfileComponent],
       providers: [
         provideRouter([]),
-        { provide: ProfileService, useValue: { profile, load: () => of({ data: profile() }) } },
+        { provide: ProfileService, useValue: { profile, load: () => of({ data: profile() }), update } },
         { provide: AuthService, useValue: { currentUserSignal: profile } },
       ],
     });
@@ -101,5 +107,53 @@ describe('perfil del administrador dentro del panel', () => {
     profile.update(p => ({ ...p!, role: 'STUDENT' }));
     const fixture = render();
     expect(fixture.nativeElement.querySelector('.identity-edit')).not.toBeNull();
+  });
+
+  it('muestra fotos y avatares del estudiante solo dentro de Editar perfil', () => {
+    profile.update(p => ({ ...p!, role: 'STUDENT' }));
+    const fixture = render();
+    expect(fixture.nativeElement.querySelector('#account-title')?.parentElement.querySelector('app-profile-picture')).toBeNull();
+    fixture.nativeElement.querySelector('.identity-edit').click();
+    fixture.detectChanges();
+    const dialog = fixture.nativeElement.querySelector('app-profile-edit-dialog');
+    expect(dialog.querySelectorAll('app-profile-picture').length).toBe(1);
+    expect(dialog.querySelectorAll('.avatar-choice').length).toBe(8);
+    expect(dialog.textContent).toContain('Subir foto');
+    expect(dialog.querySelector('.avatar-option')).toBeNull();
+  });
+
+  it('conserva las opciones de foto en el perfil del administrador', () => {
+    const fixture = render();
+    expect(fixture.nativeElement.querySelector('app-profile-picture')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.avatar-choice')).toBeNull();
+  });
+
+  it('guardar datos no restaura el avatar anterior tras subir una foto', () => {
+    profile.update(p => ({ ...p!, role: 'STUDENT', avatar: 'op-01' }));
+    const fixture = render();
+    fixture.componentInstance.editing.set(true);
+    fixture.detectChanges();
+    profile.update(p => ({ ...p!, avatar: null, photoUrl: '/profile/photos/12345678-1234-1234-1234-123456789abc' }));
+    fixture.detectChanges();
+    const dialog = fixture.debugElement.query(By.directive(ProfileEditDialogComponent)).componentInstance as ProfileEditDialogComponent;
+    dialog.save();
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ avatar: '' }));
+  });
+
+  it('espera a que termine de guardar la foto antes de guardar otros datos', () => {
+    profile.update(p => ({ ...p!, role: 'STUDENT' }));
+    const fixture = render();
+    fixture.componentInstance.editing.set(true);
+    fixture.detectChanges();
+    const picture = fixture.debugElement.query(By.directive(ProfilePictureComponent)).componentInstance as ProfilePictureComponent;
+    const dialog = fixture.debugElement.query(By.directive(ProfileEditDialogComponent)).componentInstance as ProfileEditDialogComponent;
+    picture.busyChange.emit(true);
+    fixture.detectChanges();
+    dialog.save();
+    expect(update).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('app-profile-edit-dialog button[type="submit"]').disabled).toBe(true);
+    picture.busyChange.emit(false);
+    dialog.save();
+    expect(update).toHaveBeenCalledTimes(1);
   });
 });
