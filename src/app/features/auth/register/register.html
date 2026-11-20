@@ -32,7 +32,7 @@
       Continuar
     </button>
   </form>
-  <ca-google-button />
+  <ca-google-button [signup]="true" />
   } @else {
     <div class="form">
       <p>Enviaremos el código a <strong>{{ f['email'].value }}</strong>. ¿El correo está bien escrito?</p>
