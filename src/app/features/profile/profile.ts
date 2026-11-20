@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GoogleButtonComponent } from '../auth/google-button';
 import { ProfileService } from '../../core/services/profile';
@@ -33,11 +33,12 @@ interface ChecklistItem {
     ProfileEditDialogComponent,
     PasswordFormComponent
   ],
-  host: { '(document:keydown.escape)': 'editing.set(false)' },
+  host: { '(document:keydown.escape)': 'editing.set(false)', '[class.is-embedded]': 'embedded()' },
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })
 export class ProfileComponent implements OnInit {
+  readonly embedded = input(false);
   private profileService = inject(ProfileService);
 
   profile = this.profileService.profile;
@@ -60,10 +61,14 @@ export class ProfileComponent implements OnInit {
   checklist = computed<ChecklistItem[]>(() => {
     const p = this.profile();
     if (!p) return [];
-    return [
+    const identityItems = [
       { label: 'Elige un avatar', done: !!p.avatar },
       { label: 'Elige tu alias público', done: !!p.displayName },
       { label: 'Escribe tu biografía', done: !!p.bio },
+    ];
+    if (p.role === 'ADMIN') return identityItems;
+    return [
+      ...identityItems,
       { label: 'Aprueba tu primer módulo', done: p.modulesCompleted > 0 },
       { label: 'Consigue tu primera insignia', done: p.badges.some(b => b.earned) }
     ];
