@@ -45,6 +45,7 @@ export interface Profile {
   bio: string | null;
   country: string | null;
   avatar: string | null;
+  photoUrl?: string | null;
   showInLeaderboard: boolean;
   createdAt: string;
   xp: number;
@@ -81,6 +82,7 @@ export interface LeaderboardEntry {
   rank: number | null;
   name: string;
   avatar: string | null;
+  photoUrl?: string | null;
   xp: number;
   modulesCompleted: number;
   league: League;

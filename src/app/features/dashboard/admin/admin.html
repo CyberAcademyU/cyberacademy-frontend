@@ -373,9 +373,12 @@
               @for (u of students(); track u.userId) {
                 <tr>
                   <td>
+                    <div class="student-identity">
+                    <ca-avatar [avatar]="u.avatar" [photoUrl]="u.photoUrl" [name]="fullName(u)" [size]="36" />
                     <div class="person">
                       <strong>{{ fullName(u) }}</strong>
                       <span>{{ u.email }}</span>
+                    </div>
                     </div>
                   </td>
                   <td><span [class]="userStatusClass(u.status)">{{ userStatusLabel(u.status) }}</span></td>
@@ -410,6 +413,7 @@
   <div class="ca-backdrop" (click)="closeStudentDetail()">
     <div class="ca-dialog" role="dialog" aria-modal="true" aria-labelledby="student-title" (click)="$event.stopPropagation()">
       <div class="ca-dialog-head">
+        <ca-avatar [avatar]="student.avatar" [photoUrl]="student.photoUrl" [name]="fullName(student)" [size]="48" />
         <div>
           <h2 id="student-title">{{ student.firstName }} {{ student.lastName }}</h2>
           <p class="dim">{{ student.email }}</p>

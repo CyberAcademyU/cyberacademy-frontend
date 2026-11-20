@@ -42,7 +42,7 @@ interface NavItem {
             </a>
           }
           <a routerLink="/dashboard/profile" class="me" aria-label="Mi perfil" title="Mi perfil">
-            <ca-avatar [avatar]="profile()?.avatar" [name]="profile()?.publicName ?? user()?.firstName ?? ''" [size]="34" />
+            <ca-avatar [avatar]="profile()?.avatar" [photoUrl]="profile()?.photoUrl" [name]="profile()?.publicName ?? user()?.firstName ?? ''" [size]="34" />
           </a>
           <button type="button" class="ca-icon-btn" (click)="logout()" aria-label="Cerrar sesión" title="Cerrar sesión">
             <ca-icon name="logout" />
