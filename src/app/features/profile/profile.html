@@ -27,9 +27,11 @@
           <p class="identity-bio">{{ p.bio }}</p>
         }
       </div>
-      <button type="button" class="ca-btn identity-edit" (click)="editing.set(true); notice.set(null)">
-        <ca-icon name="edit" [size]="16" /> Editar perfil
-      </button>
+      @if (p.role !== 'ADMIN') {
+        <button type="button" class="ca-btn identity-edit" (click)="editing.set(true); notice.set(null)">
+          <ca-icon name="edit" [size]="16" /> Editar perfil
+        </button>
+      }
     </section>
 
     @if (notice(); as message) {
@@ -166,7 +168,7 @@
       </div>
     </div>
 
-    @if (editing()) {
+    @if (editing() && p.role !== 'ADMIN') {
       <app-profile-edit-dialog [profile]="p" (saved)="onSaved()" (cancel)="editing.set(false)" />
     }
   }

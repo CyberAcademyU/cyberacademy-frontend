@@ -49,6 +49,7 @@ describe('perfil del administrador dentro del panel', () => {
     expect(root.querySelector('ca-app-header')).toBeNull();
     expect(root.querySelector('.stats')).toBeNull();
     expect(root.querySelector('.checklist-card')).toBeNull();
+    expect(root.querySelector('.identity-edit')).toBeNull();
     expect(root.querySelector('ca-google-button')).not.toBeNull();
     expect(fixture.componentInstance.checklist().length).toBe(3);
   });
@@ -87,5 +88,18 @@ describe('perfil del administrador dentro del panel', () => {
   it('conserva el porcentaje de perfil para estudiantes', () => {
     profile.update(p => ({ ...p!, role: 'STUDENT' }));
     expect(render().nativeElement.querySelector('.checklist-card')).not.toBeNull();
+  });
+
+  it('no monta el diálogo de edición para el administrador', () => {
+    const fixture = render();
+    fixture.componentInstance.editing.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-profile-edit-dialog')).toBeNull();
+  });
+
+  it('conserva Editar perfil para estudiantes', () => {
+    profile.update(p => ({ ...p!, role: 'STUDENT' }));
+    const fixture = render();
+    expect(fixture.nativeElement.querySelector('.identity-edit')).not.toBeNull();
   });
 });
