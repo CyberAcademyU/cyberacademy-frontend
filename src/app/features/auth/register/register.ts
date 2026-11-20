@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { GoogleButtonComponent } from '../google-button';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth';
@@ -9,7 +10,7 @@ import { transientMessage } from '../../../shared/ui/transient-message';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, AuthShellComponent],
+  imports: [ReactiveFormsModule, RouterLink, AuthShellComponent, GoogleButtonComponent],
   templateUrl: './register.html',
   styleUrl: '../login/login.css'
 })
