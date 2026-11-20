@@ -4,9 +4,11 @@
 2. Publicar el backend con los endpoints `/profile/photo`, `/profile/avatar` y `/profile/photos/{version}`.
 3. Publicar este frontend. No hacen falta claves externas ni buckets públicos.
 
-En **Mi perfil → Cuenta y seguridad → Foto de perfil**:
-- STUDENT: subir/cambiar/quitar foto o seleccionar uno de los ocho avatares.
-- ADMIN: subir/cambiar/quitar foto; no hay catálogo de avatares ni edición de datos generales.
+- STUDENT: en **Mi perfil → Editar perfil → Foto de perfil**, subir/cambiar/quitar foto
+  o seleccionar uno de los ocho avatares. Los cambios de imagen se guardan al momento;
+  «Guardar cambios» guarda los demás datos sin revertir la foto/avatar actual.
+- ADMIN: en **Mi perfil → Cuenta y seguridad → Foto de perfil**, subir/cambiar/quitar
+  foto; no hay catálogo de avatares ni edición de datos generales.
 
 Solo JPG/PNG hasta 2 MB. Se recortan al centro y se guardan en 256×256 sin metadatos.
 Los cambios actualizan el perfil compartido, incluida la cabecera, sin recargar.
