@@ -21,6 +21,7 @@ import { CoverPickerComponent } from '../../../shared/ui/cover-picker';
 import { transientMessage } from '../../../shared/ui/transient-message';
 import { LineChartComponent, LinePoint } from '../../../shared/ui/line-chart';
 import { BarChartComponent, BarGroup, BarSeries } from '../../../shared/ui/bar-chart';
+import { ProfileComponent } from '../../profile/profile';
 
 interface OptionDraft {
   text: string;
@@ -59,7 +60,8 @@ interface SectionDraft {
     ModuleCoverComponent,
     CoverPickerComponent,
     LineChartComponent,
-    BarChartComponent
+    BarChartComponent,
+    ProfileComponent
   ],
   host: { '(document:keydown.escape)': 'onEscape()' },
   templateUrl: './admin.html',
@@ -72,7 +74,7 @@ export class AdminDashboardComponent implements OnInit {
   private router = inject(Router);
 
   user = this.authService.currentUserSignal;
-  activeTab = signal<'resumen' | 'modulos' | 'usuarios'>('resumen');
+  activeTab = signal<'resumen' | 'modulos' | 'usuarios' | 'perfil'>('resumen');
   exportSuccess = transientMessage(false);
 
   // --- Resumen global (datos reales) ---
@@ -157,13 +159,13 @@ export class AdminDashboardComponent implements OnInit {
     this.loadModules();
   }
 
-  selectTab(tab: 'resumen' | 'modulos' | 'usuarios'): void {
+  selectTab(tab: 'resumen' | 'modulos' | 'usuarios' | 'perfil'): void {
     this.activeTab.set(tab);
     if (tab === 'resumen') {
       this.loadOverview();
     } else if (tab === 'modulos') {
       this.loadModules();
-    } else {
+    } else if (tab === 'usuarios') {
       this.loadStudents();
     }
   }
