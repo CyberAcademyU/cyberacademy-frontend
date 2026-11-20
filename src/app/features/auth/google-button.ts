@@ -51,7 +51,6 @@ interface Identity {
       </p>
     }
     @if (message()) { <p class="message-error" role="status">{{ message() }}</p> }
-    <div #button class="google-slot"></div>
   `,
   styles: `
     :host { display: grid; justify-items: stretch; width: 100%; gap: .4rem; margin-block: var(--ca-space-4) 0; }
@@ -142,6 +141,7 @@ export class GoogleButtonComponent implements AfterViewInit {
   private hideMessageTimer?: ReturnType<typeof setTimeout>;
 
   ngAfterViewInit() {
+    this.destroy.onDestroy(() => clearTimeout(this.hideTimer));
     this.destroy.onDestroy(() => clearTimeout(this.hideMessageTimer));
     if (typeof ResizeObserver !== 'undefined') {
       const observer = new ResizeObserver(() => {
@@ -220,8 +220,8 @@ export class GoogleButtonComponent implements AfterViewInit {
 
   private failed(message?: string) {
     this.busy.set(false);
-    this.ready = false;
-    this.button().nativeElement.replaceChildren();
+    this.ready = true;
+    clearTimeout(this.hideMessageTimer);
     this.message.set(message || 'No se pudo iniciar la conexión con Google.');
     // Ocultar el mensaje después de 3 segundos sin necesidad de botón de reintentar
     this.hideMessageTimer = setTimeout(() => {
