@@ -33,7 +33,7 @@ La URL del backend se define en `src/environments/`:
 ```ts
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8080/api/v1'
+  apiUrl: 'https://backend.migueltalavera.site/api/v1'
 };
 ```
 
@@ -42,7 +42,7 @@ Archivos:
 - `environment.development.ts` → `ng serve`
 - `environment.ts` → build de producción
 
-La configuración de producción apunta al backend de Render. Si cambia su URL, actualiza `environment.ts` y vuelve a compilar.
+La configuración de desarrollo y la de producción apuntan al backend en Render mediante `https://backend.migueltalavera.site`. Si cambia su URL, actualiza `environment.ts` y `environment.development.ts` y vuelve a compilar. Para trabajar contra un backend local, cambia `apiUrl` a `http://localhost:8080/api/v1` solo en tu copia.
 
 > El backend debe permitir el origen del frontend en `CORS_ALLOWED_ORIGINS`.
 
@@ -56,7 +56,6 @@ La configuración de producción apunta al backend de Render. Si cambia su URL, 
 6. Comprueba que el sitio abra, que `/auth/login` funcione al recargar y que el registro, el correo OTP y el inicio de sesión funcionen desde el dominio publicado.
 
 El sitio y el backend son servicios separados. No pongas secretos ni credenciales en las variables del frontend ni en `src/environments/`: se distribuyen al navegador.
-
 ### Imágenes y video en una teoría
 
 El administrador puede añadir hasta dos imágenes y un video a cada teoría:
@@ -121,9 +120,9 @@ En GitHub abre un Pull Request con **base `develop`** y como origen tu rama. Esp
 src/app
 ├── core
 │   ├── guards        # auth-guard, admin-guard
-│   ├── interceptors  # adjunta el JWT
+│   ├── interceptors  # reintenta con /auth/refresh si el access caduca
 │   ├── models        # tipos de la API
-│   └── services      # AuthService (signals + localStorage)
+│   └── services      # AuthService (signals, sin tokens en JS)
 ├── features
 │   ├── auth          # login, register, verify-otp
 │   └── dashboard     # student, admin
@@ -135,9 +134,15 @@ src/app
 
 1. `POST /auth/register` → crea el estudiante y envía el OTP por correo.
 2. Pantalla `verify-otp` → el estudiante introduce el código de 6 dígitos.
-3. `POST /auth/login` → devuelve el JWT y los datos del usuario.
-4. El token se guarda en `localStorage` (`ca_access_token`) y se envía como `Bearer` en cada petición.
-5. `authGuard` / `adminGuard` protegen las rutas según el rol.
+3. `POST /auth/login` → el backend deja cookies `HttpOnly` y devuelve solo los datos del usuario.
+4. Antes de enviar una contraseña, `PasswordTransportService` pide
+   `GET /auth/encryption-key` y la cifra (ECDH P-256 + HKDF-SHA256 + AES-256-GCM).
+   El cuerpo lleva `sealedPassword`/`sealedNewPassword`, nunca el texto en claro.
+5. No hay tokens en JavaScript: `GET /auth/me` restaura la sesión al cargar la app y
+   `POST /auth/refresh` renueva las cookies cuando el access caduca.
+6. `authGuard` / `adminGuard` protegen las rutas según el rol que confirma el servidor.
+
+Detalle completo y lista de verificación: [SEGURIDAD.md en el repositorio del backend](https://github.com/CyberAcademyU/cyberacademy-backend/blob/develop/SEGURIDAD.md).
 
 ## Flujo de aprendizaje
 
