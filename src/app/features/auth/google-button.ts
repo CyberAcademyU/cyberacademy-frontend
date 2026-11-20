@@ -35,7 +35,7 @@ interface Identity {
             <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z" />
             <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
           </svg>
-          <span>Continuar con Google</span>
+          <span>{{ signup() ? 'Regístrate con Google' : 'Continuar con Google' }}</span>
         </span>
       }
       <div #button class="google-slot"></div>
@@ -125,6 +125,7 @@ interface Identity {
 })
 export class GoogleButtonComponent implements AfterViewInit {
   readonly link = input(false);
+  readonly signup = input(false);
   readonly linked = output<void>();
   readonly linkSucceeded = output<void>();
   readonly message = signal('');
@@ -212,7 +213,7 @@ export class GoogleButtonComponent implements AfterViewInit {
     this.identityApi?.renderButton(this.button().nativeElement, {
       type: 'standard',
       theme: 'outline',
-      text: 'continue_with',
+      text: this.signup() ? 'signup_with' : 'continue_with',
       locale: 'es',
       size: 'large',
       shape: 'rectangular',
