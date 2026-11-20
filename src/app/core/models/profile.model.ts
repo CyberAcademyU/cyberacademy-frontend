@@ -38,6 +38,7 @@ export interface Profile {
   firstName: string;
   lastName: string;
   email: string;
+  googleLinked: boolean;
   role: 'STUDENT' | 'ADMIN';
   displayName: string | null;
   publicName: string;

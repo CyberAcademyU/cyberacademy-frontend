@@ -45,6 +45,12 @@ export class ProfileComponent implements OnInit {
   error = signal<string | null>(null);
   editing = signal(false);
   notice = transientMessage<string | null>(null);
+  private googleLinkedNow = signal(false);
+
+  showGoogleLink = computed(() => {
+    const p = this.profile();
+    return !!p && !p.googleLinked && !this.googleLinkedNow() && p.email.toLowerCase().endsWith('@gmail.com');
+  });
 
   memberSince = computed(() => {
     const p = this.profile();
@@ -92,6 +98,10 @@ export class ProfileComponent implements OnInit {
   onSaved(): void {
     this.editing.set(false);
     this.notice.set('Perfil actualizado.');
+  }
+
+  onGoogleLinked(): void {
+    this.googleLinkedNow.set(true);
   }
 
   badgeStatus(badge: Badge): string {
