@@ -46,11 +46,11 @@ export class ProfileComponent implements OnInit {
   error = signal<string | null>(null);
   editing = signal(false);
   notice = transientMessage<string | null>(null);
-  private googleLinkedNow = signal(false);
+  private googleLinkConfirmation = signal(false);
 
   showGoogleLink = computed(() => {
     const p = this.profile();
-    return !!p && !p.googleLinked && !this.googleLinkedNow() && p.email.toLowerCase().endsWith('@gmail.com');
+    return !!p && (!p.googleLinked || this.googleLinkConfirmation()) && p.email.toLowerCase().endsWith('@gmail.com');
   });
 
   memberSince = computed(() => {
@@ -106,7 +106,14 @@ export class ProfileComponent implements OnInit {
   }
 
   onGoogleLinked(): void {
-    this.googleLinkedNow.set(true);
+    this.googleLinkConfirmation.set(false);
+  }
+
+  onGoogleLinkSucceeded(): void {
+    this.googleLinkConfirmation.set(true);
+    // La respuesta de vinculación ya ha sido validada por el servidor.
+    // Actualizar el perfil compartido sin recargar la página.
+    this.profile.update(p => p ? { ...p, googleLinked: true } : p);
   }
 
   badgeStatus(badge: Badge): string {

@@ -2,10 +2,12 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
+import { By } from '@angular/platform-browser';
 import { ProfileComponent } from './profile';
 import { ProfileService } from '../../core/services/profile';
 import { Profile } from '../../core/models/profile.model';
 import { AuthService } from '../../core/services/auth';
+import { GoogleButtonComponent } from '../auth/google-button';
 
 describe('perfil del administrador dentro del panel', () => {
   const profile = signal<Profile | null>(null);
@@ -46,6 +48,7 @@ describe('perfil del administrador dentro del panel', () => {
     expect(root.textContent).toContain('Cambiar contraseña');
     expect(root.querySelector('ca-app-header')).toBeNull();
     expect(root.querySelector('.stats')).toBeNull();
+    expect(root.querySelector('.checklist-card')).toBeNull();
     expect(root.querySelector('ca-google-button')).not.toBeNull();
     expect(fixture.componentInstance.checklist().length).toBe(3);
   });
@@ -60,5 +63,29 @@ describe('perfil del administrador dentro del panel', () => {
   it('no ofrece vincular Google para correos que no son Gmail', () => {
     profile.update(p => ({ ...p!, email: 'admin@example.com' }));
     expect(render().nativeElement.querySelector('ca-google-button')).toBeNull();
+  });
+
+  for (const role of ['ADMIN', 'STUDENT'] as const) {
+    it(`actualiza Google y su check sin recargar para ${role}`, () => {
+      profile.update(p => ({ ...p!, role }));
+      const fixture = render();
+      const button = fixture.debugElement.query(By.directive(GoogleButtonComponent)).componentInstance as GoogleButtonComponent;
+      button.linkSucceeded.emit();
+      fixture.detectChanges();
+      expect(profile()?.googleLinked).toBe(true);
+      expect(fixture.nativeElement.querySelector('.google-linked').textContent).toContain('Cuenta vinculada');
+      expect(fixture.nativeElement.querySelector('.google-linked ca-icon')).not.toBeNull();
+      // No desmontar el aviso de éxito hasta que terminen sus 3 segundos.
+      expect(fixture.nativeElement.querySelector('ca-google-button')).not.toBeNull();
+      button.linked.emit();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('ca-google-button')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.google-linked')).not.toBeNull();
+    });
+  }
+
+  it('conserva el porcentaje de perfil para estudiantes', () => {
+    profile.update(p => ({ ...p!, role: 'STUDENT' }));
+    expect(render().nativeElement.querySelector('.checklist-card')).not.toBeNull();
   });
 });
