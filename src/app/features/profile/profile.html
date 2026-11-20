@@ -135,7 +135,9 @@
         <!-- Cuenta -->
         <section class="ca-panel card" aria-labelledby="account-title">
           <h2 id="account-title">Cuenta y seguridad</h2>
-          <app-profile-picture />
+          @if (p.role === 'ADMIN') {
+            <app-profile-picture />
+          }
           <dl class="account">
             <div><dt>Correo</dt><dd>{{ p.email }}</dd></div>
             <div><dt>Nombre completo</dt><dd>{{ p.firstName }} {{ p.lastName }}</dd></div>

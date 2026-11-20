@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, sign
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Profile } from '../../core/models/profile.model';
 import { ProfileService } from '../../core/services/profile';
-import { AVATARS, AVATAR_IDS, AvatarComponent } from '../../shared/ui/avatar';
+import { ProfilePictureComponent } from './profile-picture';
 import { IconComponent } from '../../shared/ui/icon';
 import { transientMessage } from '../../shared/ui/transient-message';
 
@@ -12,7 +12,7 @@ const BIO_MAX = 280;
 @Component({
   selector: 'app-profile-edit-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, AvatarComponent, IconComponent],
+  imports: [ReactiveFormsModule, ProfilePictureComponent, IconComponent],
   template: `
     <div class="ca-backdrop" (click)="cancel.emit()">
       <form class="ca-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title"
@@ -25,16 +25,8 @@ const BIO_MAX = 280;
         </div>
 
         <div class="ca-dialog-body">
-          <fieldset class="avatars">
-            <legend class="ca-field-label">Avatar</legend>
-            @for (id of avatarIds; track id) {
-              <label class="avatar-option" [title]="avatarName(id)">
-                <input type="radio" formControlName="avatar" [value]="id" class="ca-sr-only" />
-                <ca-avatar [avatar]="id" [size]="52" />
-                <span class="ca-sr-only">{{ avatarName(id) }}</span>
-              </label>
-            }
-          </fieldset>
+          <app-profile-picture (busyChange)="pictureBusy.set($event)" />
+          <p class="ca-field-hint">Los cambios de foto o avatar se guardan al momento. El resto de datos se guarda con «Guardar cambios».</p>
 
           <div class="row">
             <div class="ca-field">
@@ -94,7 +86,7 @@ const BIO_MAX = 280;
 
         <div class="ca-dialog-foot">
           <button type="button" class="ca-btn" (click)="cancel.emit()">Cancelar</button>
-          <button type="submit" class="ca-btn ca-btn--primary" [attr.aria-busy]="saving()" [disabled]="saving()">
+          <button type="submit" class="ca-btn ca-btn--primary" [attr.aria-busy]="saving()" [disabled]="saving() || pictureBusy()">
             {{ saving() ? 'Guardando…' : 'Guardar cambios' }}
           </button>
         </div>
@@ -102,27 +94,6 @@ const BIO_MAX = 280;
     </div>
   `,
   styles: `
-    .avatars {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-      gap: var(--ca-space-2);
-      margin: 0;
-      padding: 0;
-      border: 0;
-    }
-    .avatars legend { float: left; width: 100%; margin-bottom: var(--ca-space-2); }
-    .avatar-option {
-      display: grid;
-      place-items: center;
-      padding: 4px;
-      border: 1px solid transparent;
-      border-radius: var(--ca-radius-sm);
-      cursor: pointer;
-      transition: border-color var(--ca-fast), background-color var(--ca-fast);
-    }
-    .avatar-option:hover { border-color: var(--ca-line-strong); }
-    .avatar-option:has(input:checked) { border-color: var(--ca-signal); background: var(--ca-signal-soft); }
-    .avatar-option:has(input:focus-visible) { box-shadow: var(--ca-focus); }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ca-space-4); }
     .ca-switch > span { display: grid; gap: 2px; }
     @media (max-width: 480px) { .row { grid-template-columns: 1fr; } }
@@ -136,13 +107,12 @@ export class ProfileEditDialogComponent implements OnInit {
   saved = output<void>();
   cancel = output<void>();
 
-  protected readonly avatarIds = AVATAR_IDS;
   protected readonly bioMax = BIO_MAX;
   protected saving = signal(false);
+  protected pictureBusy = signal(false);
   protected error = transientMessage<string | null>(null);
 
   protected form = this.fb.nonNullable.group({
-    avatar: [''],
     firstName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     lastName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     displayName: ['', [Validators.pattern(/^[A-Za-z0-9_.-]{3,30}$/)]],
@@ -154,7 +124,6 @@ export class ProfileEditDialogComponent implements OnInit {
   ngOnInit(): void {
     const p = this.profile();
     this.form.setValue({
-      avatar: p.avatar ?? '',
       firstName: p.firstName,
       lastName: p.lastName,
       displayName: p.displayName ?? '',
@@ -164,11 +133,8 @@ export class ProfileEditDialogComponent implements OnInit {
     });
   }
 
-  avatarName(id: string): string {
-    return AVATARS[id]?.name ?? id;
-  }
-
   save(): void {
+    if (this.saving() || this.pictureBusy()) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -176,9 +142,13 @@ export class ProfileEditDialogComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
     const value = this.form.getRawValue();
+    const current = this.profileService.profile() ?? this.profile();
 
     this.profileService.update({
       ...value,
+      // La imagen puede haber cambiado mientras se editaban los demás campos.
+      // Nunca reenviar el avatar que había antes de subir una foto.
+      avatar: current.avatar ?? '',
       firstName: value.firstName.trim(),
       lastName: value.lastName.trim(),
       displayName: value.displayName.trim(),
