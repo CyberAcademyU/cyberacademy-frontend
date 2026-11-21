@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth-guard';
 import { adminGuard } from './core/guards/admin-guard';
+import { studentGuard } from './core/guards/student-guard';
 
 export const routes: Routes = [
   // Páginas públicas: portada y catálogo de módulos
@@ -46,6 +47,12 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     children: [
+      {
+        path: 'messages',
+        canActivate: [studentGuard],
+        title: 'Mensajes · CyberAcademy',
+        loadComponent: () => import('./features/messages/inbox').then(m => m.MessageInboxComponent)
+      },
       {
         path: 'student',
         canActivate: [authGuard],
