@@ -24,6 +24,11 @@
               [attr.aria-current]="activeTab() === 'perfil' ? 'page' : null" (click)="selectTab('perfil')">
         <ca-icon name="user" /> <span>Mi perfil</span>
       </button>
+      <button type="button" class="nav-item" aria-label="Enviar mensaje" title="Enviar mensaje"
+              [class.is-active]="activeTab() === 'mensajes'"
+              [attr.aria-current]="activeTab() === 'mensajes' ? 'page' : null" (click)="selectTab('mensajes')">
+        <ca-icon name="mail" /> <span>Enviar mensaje</span>
+      </button>
     </nav>
 
     <div class="sidebar-foot">
@@ -35,6 +40,16 @@
   </aside>
 
   <main class="main">
+    @if (activeTab() === 'mensajes') {
+      @if (studentsLoading()) { <p class="ca-loader" role="status">Cargando destinatarios…</p> }
+      @else if (studentsError()) {
+        <div class="ca-alert ca-alert--threat" role="alert">{{ studentsError() }}
+          <button type="button" class="ca-link" (click)="loadStudents()">Reintentar</button>
+        </div>
+      } @else {
+        <app-admin-compose [students]="students()" />
+      }
+    }
     @if (activeTab() === 'perfil') {
       <app-profile [embedded]="true" />
     }

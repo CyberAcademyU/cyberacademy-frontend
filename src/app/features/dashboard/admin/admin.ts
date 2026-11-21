@@ -23,6 +23,7 @@ import { LineChartComponent, LinePoint } from '../../../shared/ui/line-chart';
 import { BarChartComponent, BarGroup, BarSeries } from '../../../shared/ui/bar-chart';
 import { ProfileComponent } from '../../profile/profile';
 import { AvatarComponent } from '../../../shared/ui/avatar';
+import { AdminComposeComponent } from '../../messages/admin-compose';
 
 interface OptionDraft {
   text: string;
@@ -63,7 +64,8 @@ interface SectionDraft {
     LineChartComponent,
     BarChartComponent,
     ProfileComponent,
-    AvatarComponent
+    AvatarComponent,
+    AdminComposeComponent
   ],
   host: { '(document:keydown.escape)': 'onEscape()' },
   templateUrl: './admin.html',
@@ -76,7 +78,7 @@ export class AdminDashboardComponent implements OnInit {
   private router = inject(Router);
 
   user = this.authService.currentUserSignal;
-  activeTab = signal<'resumen' | 'modulos' | 'usuarios' | 'perfil'>('resumen');
+  activeTab = signal<'resumen' | 'modulos' | 'usuarios' | 'perfil' | 'mensajes'>('resumen');
   exportSuccess = transientMessage(false);
 
   // --- Resumen global (datos reales) ---
@@ -161,13 +163,13 @@ export class AdminDashboardComponent implements OnInit {
     this.loadModules();
   }
 
-  selectTab(tab: 'resumen' | 'modulos' | 'usuarios' | 'perfil'): void {
+  selectTab(tab: 'resumen' | 'modulos' | 'usuarios' | 'perfil' | 'mensajes'): void {
     this.activeTab.set(tab);
     if (tab === 'resumen') {
       this.loadOverview();
     } else if (tab === 'modulos') {
       this.loadModules();
-    } else if (tab === 'usuarios') {
+    } else if (tab === 'usuarios' || tab === 'mensajes') {
       this.loadStudents();
     }
   }

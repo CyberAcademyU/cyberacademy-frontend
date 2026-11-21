@@ -7,6 +7,7 @@ import { LogoComponent } from './logo';
 import { IconComponent, IconName } from './icon';
 import { AvatarComponent } from './avatar';
 import { LeagueEmblemComponent } from './league-emblem';
+import { MessagesService } from '../../core/services/messages';
 
 interface NavItem {
   path: string;
@@ -35,6 +36,15 @@ interface NavItem {
 
         <div class="actions">
           <ng-content />
+          @if (user()?.role === 'STUDENT') {
+            <a routerLink="/dashboard/messages" class="ca-icon-btn inbox-link" title="Mensajes"
+               [attr.aria-label]="'Mensajes, ' + messages.unreadCount() + ' sin leer'">
+              <ca-icon name="mail" />
+              @if (messages.unreadCount()) {
+                <span class="message-count">{{ messages.unreadCount() > 99 ? '99+' : messages.unreadCount() }}</span>
+              }
+            </a>
+          }
           @if (profile(); as p) {
             <a routerLink="/dashboard/leaderboard" class="xp" [attr.aria-label]="'Liga ' + p.league.name + ', ' + p.xp + ' XP'">
               <ca-league-emblem [code]="p.league.code" [size]="22" />
@@ -137,8 +147,10 @@ interface NavItem {
     .xp:hover { border-color: var(--ca-line-strong); }
     .unit { color: var(--ca-text-dim); font-size: var(--ca-text-xs); }
     .me { display: inline-flex; border-radius: 50%; }
+    .inbox-link { position: relative; text-decoration: none; }
+    .message-count { position: absolute; right: -2px; top: -2px; border-radius: 99px; padding: 1px 4px; background: var(--ca-signal); color: var(--ca-on-signal); font-size: 10px; min-width: 16px; text-align: center; }
 
-    @media (max-width: 760px) {
+    @media (max-width: 1000px) {
       .inner { gap: var(--ca-space-3); }
       .nav--top { display: none; }
       .nav--bottom {
@@ -170,12 +182,14 @@ export class AppHeaderComponent implements OnInit {
   private auth = inject(AuthService);
   private router = inject(Router);
   private profileService = inject(ProfileService);
+  protected messages = inject(MessagesService);
 
   protected readonly user = this.auth.currentUserSignal;
   protected readonly profile = this.profileService.profile;
   protected readonly nav: NavItem[] = [
     { path: '/dashboard/student', label: 'Aprender', icon: 'book' },
     { path: '/dashboard/leaderboard', label: 'Clasificación', icon: 'trophy' },
+    { path: '/dashboard/messages', label: 'Mensajes', icon: 'mail' },
     { path: '/dashboard/profile', label: 'Perfil', icon: 'user' }
   ];
 
