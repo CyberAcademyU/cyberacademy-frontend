@@ -14,6 +14,7 @@ export class AuthService {
   private refreshPending?: Promise<void>;
   private readonly cookieOptions = { withCredentials: true, headers: { 'X-Requested-With': 'CyberAcademy' } };
   private ready?: Promise<void>;
+  private pendingGoogleCredential: string | null = null;
   readonly sessionEnding = new Subject<void>();
   readonly currentUserSignal = signal<User | null>(null);
   readonly isAdmin = computed(() => this.currentUserSignal()?.role === 'ADMIN');
@@ -86,9 +87,22 @@ export class AuthService {
   googleChallenge() {
     return this.http.post<{clientId: string; nonce: string}>(`${this.apiUrl}/auth/google/challenge`, {});
   }
-  googleLogin(credential: string, link: boolean) {
-    return this.http.post<ApiResponse<AuthResponse>>(`${this.apiUrl}/auth/google${link ? '/link' : ''}`, {credential})
+  googleLogin(credential: string, link: boolean, names?: { firstName: string; lastName: string }) {
+    return this.http.post<ApiResponse<AuthResponse>>(`${this.apiUrl}/auth/google${link ? '/link' : ''}`, {credential, ...names})
       .pipe(tap(response => { if (response.data) this.currentUserSignal.set(response.data.user); }));
+  }
+  beginGoogleRegistration(credential: string): void {
+    // Solo en memoria: nunca guardar la credencial en URL, historial o almacenamiento.
+    this.pendingGoogleCredential = credential;
+  }
+  hasPendingGoogleRegistration(): boolean { return this.pendingGoogleCredential !== null; }
+  cancelGoogleRegistration(): void { this.pendingGoogleCredential = null; }
+  completeGoogleRegistration(firstName: string, lastName: string) {
+    const credential = this.pendingGoogleCredential;
+    if (!credential) throw new Error('Selecciona tu cuenta de Google de nuevo.');
+    return this.googleLogin(credential, false, { firstName, lastName }).pipe(
+      tap(() => this.cancelGoogleRegistration())
+    );
   }
   requestPasswordReset(email: string): Observable<ApiResponse<void>> {
     return this.http.post<ApiResponse<void>>(`${this.apiUrl}/auth/password-reset/request`, { email });
@@ -113,6 +127,7 @@ export class AuthService {
     if (current) this.currentUserSignal.set({ ...current, role });
   }
   clearSession(): void {
+    this.cancelGoogleRegistration();
     this.sessionEnding.next();
     this.currentUserSignal.set(null);
   }

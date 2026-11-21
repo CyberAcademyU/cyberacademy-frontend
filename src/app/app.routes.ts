@@ -20,6 +20,11 @@ export const routes: Routes = [
     path: 'auth',
     children: [
       {
+        path: 'google-details',
+        title: 'Completa tu registro · CyberAcademy',
+        loadComponent: () => import('./features/auth/google-details/google-details').then(m => m.GoogleDetailsComponent)
+      },
+      {
         path: 'login',
         loadComponent: () => import('./features/auth/login/login').then(m => m.LoginComponent)
       },

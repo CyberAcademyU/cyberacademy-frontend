@@ -79,4 +79,33 @@ describe('sesiones HttpOnly', () => {
     request.flush({ success: true });
     await pending;
   });
+
+  it('completa el registro Google con nombres y borra la credencial temporal', async () => {
+    auth.beginGoogleRegistration('google-credential');
+    expect(auth.hasPendingGoogleRegistration()).toBe(true);
+    expect(localStorage.getItem('google-credential')).toBeNull();
+    const pending = firstValueFrom(auth.completeGoogleRegistration('María', 'Pérez Díaz'));
+    const request = requests.expectOne(`${environment.apiUrl}/auth/google`);
+    expect(request.request.body).toEqual({
+      credential: 'google-credential', firstName: 'María', lastName: 'Pérez Díaz',
+    });
+    request.flush({ success: true, data: { user: { id: '1', role: 'STUDENT' } } });
+    await pending;
+    expect(auth.hasPendingGoogleRegistration()).toBe(false);
+    expect(auth.isAuthenticated()).toBe(true);
+  });
+
+  it('no inicia peticiones al completar un registro sin credencial pendiente', () => {
+    expect(() => auth.completeGoogleRegistration('María', 'Pérez')).toThrow();
+    requests.expectNone(`${environment.apiUrl}/auth/google`);
+  });
+
+  it('mantiene el endpoint separado de vinculación', async () => {
+    const pending = firstValueFrom(auth.googleLogin('credential', true));
+    requests.expectOne(`${environment.apiUrl}/auth/google/link`).flush({
+      success: true, data: { user: { id: '1', role: 'ADMIN' } },
+    });
+    await pending;
+    expect(auth.isAdmin()).toBe(true);
+  });
 });
