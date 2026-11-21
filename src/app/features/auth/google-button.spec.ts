@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../../core/services/auth';
@@ -11,6 +11,7 @@ describe('GoogleButtonComponent', () => {
   const auth = {
     googleChallenge: vi.fn(),
     googleLogin: vi.fn(),
+    beginGoogleRegistration: vi.fn(),
   };
 
   beforeEach(() => {
@@ -63,6 +64,18 @@ describe('GoogleButtonComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Continuar con Google');
     expect(renderedText).toBe('continue_with');
+  });
+
+  it('abre el formulario de nombres al recibir 428 sin poner la credencial en la URL', () => {
+    auth.googleLogin.mockReturnValue(throwError(() => ({ status: 428 })));
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.detectChanges();
+    callback({ credential: 'solo-en-memoria' });
+    expect(auth.beginGoogleRegistration).toHaveBeenCalledWith('solo-en-memoria');
+    expect(navigate).toHaveBeenCalledWith(['/auth/google-details']);
+    expect(fixture.componentInstance.busy()).toBe(false);
+    expect(fixture.componentInstance.message()).toBe('');
   });
 
   it('oculta el error a los 3 segundos y conserva Google para otro intento', () => {

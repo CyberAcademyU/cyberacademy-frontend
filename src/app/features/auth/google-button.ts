@@ -194,7 +194,13 @@ export class GoogleButtonComponent implements AfterViewInit {
                 }, 3000);
               } else void this.router.navigate([response.data?.user.role === 'ADMIN' ? '/dashboard/admin' : '/dashboard/student']);
             },
-            error: err => this.failed(err.error?.message),
+            error: err => {
+              if (err.status === 428 && !this.link()) {
+                this.busy.set(false);
+                this.auth.beginGoogleRegistration(result.credential);
+                void this.router.navigate(['/auth/google-details']);
+              } else this.failed(err.error?.message);
+            },
           });
         }});
         this.identityApi = identity;
