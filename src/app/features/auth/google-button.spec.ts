@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../../core/services/auth';
 import { GoogleButtonComponent } from './google-button';
@@ -17,18 +17,26 @@ describe('GoogleButtonComponent', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     auth.googleChallenge.mockReturnValue(of({ clientId: 'web', nonce: 'nonce' }));
-    auth.googleLogin.mockReturnValue(throwError(() => ({
-      error: { message: 'Inicia sesión con tu contraseña y vincula Google desde tu perfil.' },
-    })));
+    auth.googleLogin.mockReturnValue(
+      throwError(() => ({
+        error: { message: 'Inicia sesión con tu contraseña y vincula Google desde tu perfil.' },
+      })),
+    );
     Object.defineProperty(window, 'google', {
       configurable: true,
-      value: { accounts: { id: {
-        initialize: (config: { callback: typeof callback }) => { callback = config.callback; },
-        renderButton: (element: HTMLElement, options: { text: string }) => {
-          renderedText = options.text;
-          element.replaceChildren(document.createElement('iframe'));
+      value: {
+        accounts: {
+          id: {
+            initialize: (config: { callback: typeof callback }) => {
+              callback = config.callback;
+            },
+            renderButton: (element: HTMLElement, options: { text: string }) => {
+              renderedText = options.text;
+              element.replaceChildren(document.createElement('iframe'));
+            },
+          },
         },
-      } } },
+      },
     });
     TestBed.configureTestingModule({
       imports: [GoogleButtonComponent],
@@ -40,6 +48,7 @@ describe('GoogleButtonComponent', () => {
     TestBed.resetTestingModule();
     Reflect.deleteProperty(window, 'google');
     vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -91,5 +100,107 @@ describe('GoogleButtonComponent', () => {
     expect(fixture.componentInstance.message()).toBe('');
     callback({ credential: 'otro-token' });
     expect(auth.googleLogin).toHaveBeenCalledTimes(2);
+  });
+
+  it('renueva tras inactividad sin recargar la página', () => {
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.detectChanges();
+    vi.advanceTimersByTime(11 * 60000);
+    window.dispatchEvent(new Event('focus'));
+    expect(auth.googleChallenge.mock.calls.length).toBeGreaterThan(1);
+    callback({ credential: 'nuevo-token' });
+    expect(auth.googleLogin).toHaveBeenCalledWith('nuevo-token', false);
+  });
+
+  it('pausa la renovación en una pestaña oculta y renueva al volver', () => {
+    const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.detectChanges();
+    hidden.mockReturnValue(true);
+    vi.advanceTimersByTime(12 * 60000);
+    expect(auth.googleChallenge).toHaveBeenCalledTimes(1);
+    hidden.mockReturnValue(false);
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(auth.googleChallenge).toHaveBeenCalledTimes(2);
+  });
+
+  it('no rota el nonce mientras una credencial se está validando', () => {
+    const response = new Subject();
+    auth.googleLogin.mockReturnValue(response);
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.detectChanges();
+    callback({ credential: 'validando' });
+    vi.advanceTimersByTime(12 * 60000);
+    window.dispatchEvent(new Event('focus'));
+    expect(auth.googleChallenge).toHaveBeenCalledTimes(1);
+    expect(fixture.componentInstance.busy()).toBe(true);
+  });
+
+  it('conserva la confirmación de vinculación durante tres segundos', () => {
+    auth.googleLogin.mockReturnValue(of({ data: { user: { role: 'STUDENT' } } }));
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.componentRef.setInput('link', true);
+    fixture.detectChanges();
+    const succeeded = vi.fn();
+    const linked = vi.fn();
+    fixture.componentInstance.linkSucceeded.subscribe(succeeded);
+    fixture.componentInstance.linked.subscribe(linked);
+    callback({ credential: 'vincular' });
+    expect(auth.googleLogin).toHaveBeenCalledWith('vincular', true);
+    expect(succeeded).toHaveBeenCalledTimes(1);
+    expect(fixture.componentInstance.justLinked()).toBe(true);
+    vi.advanceTimersByTime(3000);
+    expect(linked).toHaveBeenCalledTimes(1);
+    expect(auth.googleChallenge).toHaveBeenCalledTimes(1);
+  });
+
+  it('un 401 renueva el desafío pero nunca reenvía la credencial vieja', () => {
+    auth.googleLogin.mockReturnValue(throwError(() => ({ status: 401 })));
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.detectChanges();
+    const stale = callback;
+    callback({ credential: 'caducado' });
+    expect(auth.googleChallenge).toHaveBeenCalledTimes(2);
+    expect(auth.googleLogin).toHaveBeenCalledTimes(1);
+    stale({ credential: 'caducado' });
+    expect(auth.googleLogin).toHaveBeenCalledTimes(1);
+    callback({ credential: 'nuevo' });
+    expect(auth.googleLogin).toHaveBeenCalledTimes(2);
+  });
+
+  it('cambiar de registro a login reutiliza GIS y el callback apunta al botón actual', () => {
+    const first = TestBed.createComponent(GoogleButtonComponent);
+    first.detectChanges();
+    first.destroy();
+    const second = TestBed.createComponent(GoogleButtonComponent);
+    second.detectChanges();
+    expect(auth.googleChallenge).toHaveBeenCalledTimes(1);
+    callback({ credential: 'token' });
+    expect(auth.googleLogin).toHaveBeenCalledTimes(1);
+  });
+
+  it('no renueva mientras se completa el registro con nombres', () => {
+    auth.googleLogin.mockReturnValue(throwError(() => ({ status: 428 })));
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.detectChanges();
+    callback({ credential: 'pendiente' });
+    fixture.destroy();
+    vi.advanceTimersByTime(11 * 60000);
+    expect(auth.googleChallenge).toHaveBeenCalledTimes(1);
+    expect(auth.beginGoogleRegistration).toHaveBeenCalledWith('pendiente');
+  });
+
+  it('permite reintentar si falla la preparación inicial y libera los temporizadores', () => {
+    auth.googleChallenge.mockReturnValueOnce(throwError(() => ({ status: 0 })));
+    const fixture = TestBed.createComponent(GoogleButtonComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Reintentar conexión con Google');
+    fixture.componentInstance.prepare();
+    expect(auth.googleChallenge).toHaveBeenCalledTimes(2);
+    fixture.destroy();
+    vi.advanceTimersByTime(11 * 60000);
+    window.dispatchEvent(new Event('focus'));
+    expect(auth.googleChallenge).toHaveBeenCalledTimes(2);
   });
 });
