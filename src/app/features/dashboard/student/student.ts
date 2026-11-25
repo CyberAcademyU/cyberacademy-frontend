@@ -138,6 +138,17 @@ export class StudentDashboardComponent implements OnInit, OnDestroy {
 
   completedCount = computed(() => this.summaries().filter(m => m.status === 'COMPLETED').length);
 
+  /** Finalizar el recorrido no equivale a aprobarlo ni a obtener una certificación. */
+  allModulesFinished = computed(() => {
+    const modules = this.summaries();
+    return !this.loading() && !this.error() && modules.length > 0 && modules.every(module =>
+      module.totalSections > 0 && module.completedSections >= module.totalSections &&
+      (module.status === 'COMPLETED' ||
+        (module.status === 'FAILED' && module.maxPracticeAttempts > 0 &&
+          module.practiceAttempts >= module.maxPracticeAttempts))
+    );
+  });
+
   averageScore = computed<number | null>(() => {
     const scored = this.summaries().filter(m => m.score !== null);
     if (!scored.length) return null;
