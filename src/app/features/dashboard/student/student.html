@@ -6,21 +6,31 @@
 
 <main class="page">
   <!-- Estado del estudiante y siguiente paso -->
-  <section class="hero" aria-labelledby="hero-title">
+  <section class="hero" [class.hero--finished]="allModulesFinished()" aria-labelledby="hero-title">
     <div class="hero-copy">
-      <h1 id="hero-title">Hola, {{ studentName() }}</h1>
-      @if (nextModule(); as next) {
-        <p class="hero-lead">
-          Tu siguiente paso es la <strong>{{ nextStepLabel(next) }}</strong> de <strong>{{ next.title }}</strong>.
-        </p>
-        <button type="button" class="ca-btn ca-btn--primary" (click)="openModule(next)">
-          <ca-icon name="play" [size]="16" />
-          {{ next.status === 'NOT_STARTED' ? 'Empezar módulo' : 'Continuar módulo' }}
-        </button>
-      } @else if (summaries().length > 0) {
-        <p class="hero-lead">Terminaste todos los módulos disponibles. Revisa tus resultados o espera nuevos módulos.</p>
-      } @else if (!loading()) {
-        <p class="hero-lead">Todavía no hay módulos publicados. Aparecerán aquí en cuanto estén listos.</p>
+      @if (allModulesFinished()) {
+        <h1 id="hero-title">¡Felicitaciones por completar todos los módulos de CyberAcademy!</h1>
+        <div class="completion-message">
+          <p>Tu esfuerzo y dedicación te han ayudado a desarrollar hábitos más seguros para protegerte en el mundo digital.</p>
+          <p>¡Esto apenas comienza! Próximamente estaremos agregando <strong>más contenido, nuevos módulos y una certificación</strong> para reconocer tu aprendizaje.</p>
+          <p class="completion-thanks">Gracias por ser parte de CyberAcademy. ¡Sigue aprendiendo y fortaleciendo tus habilidades!</p>
+        </div>
+        <button type="button" class="ca-btn ca-btn--primary" (click)="openResults()">Ver mis resultados</button>
+      } @else {
+        <h1 id="hero-title">Hola, {{ studentName() }}</h1>
+        @if (nextModule(); as next) {
+          <p class="hero-lead">
+            Tu siguiente paso es la <strong>{{ nextStepLabel(next) }}</strong> de <strong>{{ next.title }}</strong>.
+          </p>
+          <button type="button" class="ca-btn ca-btn--primary" (click)="openModule(next)">
+            <ca-icon name="play" [size]="16" />
+            {{ next.status === 'NOT_STARTED' ? 'Empezar módulo' : 'Continuar módulo' }}
+          </button>
+        } @else if (!loading() && !error() && summaries().length > 0) {
+          <p class="hero-lead">Consulta el estado de tus módulos y revisa tus resultados.</p>
+        } @else if (!loading() && !error()) {
+          <p class="hero-lead">Todavía no hay módulos publicados. Aparecerán aquí en cuanto estén listos.</p>
+        }
       }
     </div>
 
@@ -29,7 +39,7 @@
       <dl class="hero-stats">
         <div class="ca-stat">
           <dt class="ca-stat-label">Completados</dt>
-          <dd class="ca-stat-value">{{ completedCount() }}<span class="of">/{{ summaries().length }}</span></dd>
+          <dd class="ca-stat-value">{{ allModulesFinished() ? summaries().length : completedCount() }}<span class="of">/{{ summaries().length }}</span></dd>
         </div>
         <div class="ca-stat">
           <dt class="ca-stat-label">Nota media</dt>
@@ -100,7 +110,11 @@
                 <span>Empieza por {{ next.title }}: son tres lecciones cortas y una práctica.</span>
                 <button type="button" class="ca-btn ca-btn--sm" (click)="openModule(next)">Empezar {{ next.code }}</button>
               } @else {
-                <span>Cuando empieces un módulo aparecerá aquí.</span>
+                @if (allModulesFinished()) {
+                  <span>Ya completaste los módulos disponibles. Puedes revisarlos en Recientes o consultar tus resultados.</span>
+                } @else {
+                  <span>Cuando empieces un módulo aparecerá aquí.</span>
+                }
               }
             }
             @case ('recent') {
