@@ -23,23 +23,23 @@ describe('navegación pública', () => {
     fixture.detectChanges();
     return fixture;
   }
-  it('destaca el catálogo y conserva registro e inicio de sesión', () => {
+  it('conserva solo registro e inicio de sesión, sin duplicar el acceso al catálogo', () => {
     const fixture = render();
     const links = [...fixture.nativeElement.querySelectorAll('.links a')] as HTMLAnchorElement[];
     expect(links.map(link => link.textContent?.trim())).toEqual([
-      'Explorar módulos', 'Crear cuenta', 'Iniciar sesión',
+      'Crear cuenta', 'Iniciar sesión',
     ]);
     expect(links.map(link => link.getAttribute('href'))).toEqual([
-      '/explorar', '/auth/register', '/auth/login',
+      '/auth/register', '/auth/login',
     ]);
-    expect(links[0].classList.contains('catalog-link')).toBe(true);
-    expect(links[1].classList.contains('hide-sm')).toBe(false);
-    expect(links[2].classList.contains('ca-btn--primary')).toBe(true);
+    expect(fixture.nativeElement.querySelector('a[href="/explorar"]')).toBeNull();
+    expect(links[0].classList.contains('hide-sm')).toBe(false);
+    expect(links[1].classList.contains('ca-btn--primary')).toBe(true);
   });
-  it('mantiene el catálogo disponible y dirige al panel del estudiante autenticado', () => {
+  it('dirige al panel del estudiante autenticado sin duplicar el acceso al catálogo', () => {
     user.set({ role: 'STUDENT' });
     const fixture = render();
-    expect(fixture.nativeElement.querySelector('.catalog-link').getAttribute('href')).toBe('/explorar');
+    expect(fixture.nativeElement.querySelector('a[href="/explorar"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('.ca-btn--primary').getAttribute('href')).toBe('/dashboard/student');
     expect(fixture.nativeElement.textContent).not.toContain('Crear cuenta');
   });
