@@ -42,6 +42,36 @@
   font-weight: 600;
 }
 
+.hero--finished {
+  align-items: start;
+  padding-bottom: var(--ca-space-6);
+  border-bottom: 1px solid var(--ca-line);
+}
+
+.hero--finished h1 {
+  max-width: 25ch;
+  font-size: clamp(var(--ca-text-2xl), 3.2vw, var(--ca-text-3xl));
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+@media (max-width: 360px) {
+  .tabs .count { display: none; }
+}
+
+.completion-message {
+  display: grid;
+  gap: var(--ca-space-4);
+  max-width: 68ch;
+  color: var(--ca-text-dim);
+  line-height: 1.7;
+}
+
+.completion-message strong,
+.completion-thanks {
+  color: var(--ca-text);
+}
+
 .hero-status {
   display: flex;
   align-items: center;
