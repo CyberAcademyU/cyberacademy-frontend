@@ -18,8 +18,11 @@ describe('sesiones HttpOnly', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
-        { provide: PasswordTransportService, useValue: { seal: () => Promise.resolve(SEALED), warmUp: () => undefined } }
-      ]
+        {
+          provide: PasswordTransportService,
+          useValue: { seal: () => Promise.resolve(SEALED), warmUp: () => undefined },
+        },
+      ],
     });
     auth = TestBed.inject(AuthService);
     requests = TestBed.inject(HttpTestingController);
@@ -42,9 +45,11 @@ describe('sesiones HttpOnly', () => {
     const second = auth.refreshSession();
     expect(first).toBe(second);
     // Web Locks puede comenzar en el siguiente turno.
-    await new Promise(resolve => setTimeout(resolve, 0));
-    requests.expectOne(`${environment.apiUrl}/auth/me`).flush(null, { status: 401, statusText: 'Unauthorized' });
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    requests
+      .expectOne(`${environment.apiUrl}/auth/me`)
+      .flush(null, { status: 401, statusText: 'Unauthorized' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
     const refresh = requests.expectOne(`${environment.apiUrl}/auth/refresh`);
     expect(refresh.request.withCredentials).toBe(true);
     expect(refresh.request.headers.get('X-Requested-With')).toBe('CyberAcademy');
@@ -53,8 +58,10 @@ describe('sesiones HttpOnly', () => {
   });
 
   it('envía la contraseña dentro del sobre cifrado y nunca en claro', async () => {
-    const pending = firstValueFrom(auth.login({ email: 'test@example.com', password: 'secreto-123' }));
-    await new Promise(resolve => setTimeout(resolve, 0));
+    const pending = firstValueFrom(
+      auth.login({ email: 'test@example.com', password: 'secreto-123' }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
     const request = requests.expectOne(`${environment.apiUrl}/auth/login`);
 
     expect(request.request.body.password).toBeUndefined();
@@ -68,8 +75,10 @@ describe('sesiones HttpOnly', () => {
   });
 
   it('cifra la nueva contraseña al restablecerla', async () => {
-    const pending = firstValueFrom(auth.confirmPasswordReset('test@example.com', '123456', 'nueva-clave'));
-    await new Promise(resolve => setTimeout(resolve, 0));
+    const pending = firstValueFrom(
+      auth.confirmPasswordReset('test@example.com', '123456', 'nueva-clave'),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
     const request = requests.expectOne(`${environment.apiUrl}/auth/password-reset/confirm`);
 
     expect(request.request.body.newPassword).toBeUndefined();
@@ -87,7 +96,9 @@ describe('sesiones HttpOnly', () => {
     const pending = firstValueFrom(auth.completeGoogleRegistration('María', 'Pérez Díaz'));
     const request = requests.expectOne(`${environment.apiUrl}/auth/google`);
     expect(request.request.body).toEqual({
-      credential: 'google-credential', firstName: 'María', lastName: 'Pérez Díaz',
+      credential: 'google-credential',
+      firstName: 'María',
+      lastName: 'Pérez Díaz',
     });
     request.flush({ success: true, data: { user: { id: '1', role: 'STUDENT' } } });
     await pending;
@@ -103,9 +114,32 @@ describe('sesiones HttpOnly', () => {
   it('mantiene el endpoint separado de vinculación', async () => {
     const pending = firstValueFrom(auth.googleLogin('credential', true));
     requests.expectOne(`${environment.apiUrl}/auth/google/link`).flush({
-      success: true, data: { user: { id: '1', role: 'ADMIN' } },
+      success: true,
+      data: { user: { id: '1', role: 'ADMIN' } },
     });
     await pending;
     expect(auth.isAdmin()).toBe(true);
+  });
+
+  it('cierra localmente sin esperar la red y envía la sesión esperada', () => {
+    auth.currentUserSignal.set({ id: '1', role: 'STUDENT' } as never);
+    auth.activeSessionId.set('family-1');
+    auth.logout();
+    expect(auth.isAuthenticated()).toBe(false);
+    const request = requests.expectOne(`${environment.apiUrl}/auth/refresh/logout`);
+    expect(request.request.body).toEqual({ sessionId: 'family-1' });
+    request.flush({ success: true });
+  });
+
+  it('la respuesta de un logout anterior no borra un login posterior', async () => {
+    auth.logout('old-family');
+    const logout = requests.expectOne(`${environment.apiUrl}/auth/refresh/logout`);
+    const signedIn = firstValueFrom(auth.googleLogin('credential', false));
+    requests.expectOne(`${environment.apiUrl}/auth/google`).flush({
+      data: { user: { id: '1', role: 'STUDENT' } },
+    });
+    await signedIn;
+    logout.flush({ success: true });
+    expect(auth.isAuthenticated()).toBe(true);
   });
 });
