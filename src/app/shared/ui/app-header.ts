@@ -168,6 +168,8 @@ interface NavItem {
       }
       .nav--bottom a {
         flex: 1;
+        min-width: 0;
+        padding-inline: var(--ca-space-1);
         flex-direction: column;
         justify-content: center;
         gap: 2px;
