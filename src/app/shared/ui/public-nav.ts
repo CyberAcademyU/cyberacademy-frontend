@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth';
 import { LogoComponent } from './logo';
 
@@ -7,7 +7,7 @@ import { LogoComponent } from './logo';
 @Component({
   selector: 'ca-public-nav',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, LogoComponent],
+  imports: [RouterLink, LogoComponent],
   template: `
     <nav class="bar" aria-label="Principal">
       <a routerLink="/" class="brand" aria-label="CyberAcademy, inicio">
@@ -15,8 +15,6 @@ import { LogoComponent } from './logo';
       </a>
 
       <div class="links">
-        <a routerLink="/explorar" routerLinkActive="is-active" ariaCurrentWhenActive="page"
-           class="nav-action link catalog-link">Explorar módulos</a>
         @if (signedIn()) {
           <a [routerLink]="home()" class="nav-action ca-btn ca-btn--primary">Ir a mi panel</a>
         } @else {
@@ -32,10 +30,6 @@ import { LogoComponent } from './logo';
       align-items: center;
       justify-content: space-between;
       gap: var(--ca-space-4);
-      padding: var(--ca-space-2) var(--ca-space-3);
-      border: 1px solid var(--ca-line);
-      border-radius: var(--ca-radius-md);
-      background: var(--ca-deck);
     }
     .brand {
       display: inline-flex;
@@ -66,12 +60,7 @@ import { LogoComponent } from './logo';
       color: var(--ca-text);
       transition: background-color var(--ca-fast), border-color var(--ca-fast);
     }
-    .catalog-link {
-      background: var(--ca-panel);
-      border-color: var(--ca-line-strong);
-    }
-    .link:hover,
-    .link.is-active {
+    .link:hover {
       background: var(--ca-raised);
       border-color: var(--ca-signal);
     }
@@ -88,7 +77,6 @@ import { LogoComponent } from './logo';
       .bar { flex-wrap: wrap; gap: var(--ca-space-3); }
       .links { width: 100%; flex-wrap: wrap; }
       .nav-action { flex: 1; padding-inline: var(--ca-space-2); }
-      .catalog-link { flex-basis: 100%; }
     }
   `
 })
