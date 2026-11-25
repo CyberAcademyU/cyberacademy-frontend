@@ -18,7 +18,8 @@ export class ModuleStreamService {
 
   // null indica una conexión establecida: el consumidor puede recuperar eventos perdidos.
   connect(): Observable<ModuleCreatedEvent | null> {
-    return new Observable(subscriber => {
+    return new Observable((subscriber) => {
+      const version = this.auth.sessionVersion();
       const controller = new AbortController();
       const session = this.auth.sessionEnding.subscribe(() => controller.abort());
       if (!this.auth.isAuthenticated()) {
@@ -42,7 +43,13 @@ export class ModuleStreamService {
                 if (response.status >= 400 && response.status < 500 && response.status !== 429) {
                   throw new PermanentStreamError();
                 }
-                if (!response.ok || !response.headers.get('content-type')?.toLowerCase().startsWith('text/event-stream')) {
+                if (
+                  !response.ok ||
+                  !response.headers
+                    .get('content-type')
+                    ?.toLowerCase()
+                    .startsWith('text/event-stream')
+                ) {
                   throw new Error('No se pudo abrir el stream');
                 }
                 subscriber.next(null);
@@ -51,30 +58,40 @@ export class ModuleStreamService {
                 if (message.event !== 'module-created') return;
                 try {
                   const data: unknown = JSON.parse(message.data);
-                  if (typeof data === 'object' && data !== null &&
-                      typeof (data as ModuleCreatedEvent).id === 'string' &&
-                      typeof (data as ModuleCreatedEvent).title === 'string') {
+                  if (
+                    typeof data === 'object' &&
+                    data !== null &&
+                    typeof (data as ModuleCreatedEvent).id === 'string' &&
+                    typeof (data as ModuleCreatedEvent).title === 'string'
+                  ) {
                     subscriber.next(data as ModuleCreatedEvent);
                   }
-                } catch { /* Ignorar eventos malformados. */ }
+                } catch {
+                  /* Ignorar eventos malformados. */
+                }
               },
-              onclose() { throw new Error('Stream cerrado'); },
-              onerror(error) { throw error; }
+              onclose() {
+                throw new Error('Stream cerrado');
+              },
+              onerror(error) {
+                throw error;
+              },
             });
             break;
           } catch (error) {
-            if (controller.signal.aborted) break;
+            if (controller.signal.aborted || version !== this.auth.sessionVersion()) break;
             if (error instanceof UnauthorizedError) {
               try {
                 await this.auth.refreshSession();
                 if (attempt < maxRetries) continue;
               } catch {
-                this.auth.handleUnauthorized();
+                if (!controller.signal.aborted && version === this.auth.sessionVersion())
+                  this.auth.handleUnauthorized();
               }
               break;
             }
             if (error instanceof PermanentStreamError || attempt === maxRetries) break;
-            await new Promise<void>(resolve => {
+            await new Promise<void>((resolve) => {
               const timer = setTimeout(done, Math.min(1000 * 2 ** attempt, 16000));
               function done() {
                 clearTimeout(timer);
@@ -89,7 +106,10 @@ export class ModuleStreamService {
         subscriber.complete();
       };
       void run();
-      return () => { controller.abort(); session.unsubscribe(); };
+      return () => {
+        controller.abort();
+        session.unsubscribe();
+      };
     });
   }
 }
