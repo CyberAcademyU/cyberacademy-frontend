@@ -15,12 +15,13 @@ import { LogoComponent } from './logo';
       </a>
 
       <div class="links">
-        <a routerLink="/explorar" routerLinkActive="is-active" class="link">Módulos</a>
+        <a routerLink="/explorar" routerLinkActive="is-active" ariaCurrentWhenActive="page"
+           class="nav-action link catalog-link">Explorar módulos</a>
         @if (signedIn()) {
-          <a [routerLink]="home()" class="ca-btn ca-btn--sm ca-btn--primary">Ir a mi panel</a>
+          <a [routerLink]="home()" class="nav-action ca-btn ca-btn--primary">Ir a mi panel</a>
         } @else {
-          <a routerLink="/auth/register" class="link hide-sm">Crear cuenta</a>
-          <a routerLink="/auth/login" class="ca-btn ca-btn--sm ca-btn--primary">Iniciar sesión</a>
+          <a routerLink="/auth/register" class="nav-action link">Crear cuenta</a>
+          <a routerLink="/auth/login" class="nav-action ca-btn ca-btn--primary">Iniciar sesión</a>
         }
       </div>
     </nav>
@@ -31,6 +32,10 @@ import { LogoComponent } from './logo';
       align-items: center;
       justify-content: space-between;
       gap: var(--ca-space-4);
+      padding: var(--ca-space-2) var(--ca-space-3);
+      border: 1px solid var(--ca-line);
+      border-radius: var(--ca-radius-md);
+      background: var(--ca-deck);
     }
     .brand {
       display: inline-flex;
@@ -43,21 +48,47 @@ import { LogoComponent } from './logo';
       align-items: center;
       gap: var(--ca-space-2);
     }
-    .link {
-      padding: var(--ca-space-2) var(--ca-space-3);
+    .nav-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 var(--ca-space-4);
       border-radius: var(--ca-radius-sm);
-      color: var(--ca-text-dim);
+      font-family: var(--ca-font-display);
       font-size: var(--ca-text-sm);
-      font-weight: 500;
+      font-weight: 600;
       text-decoration: none;
-      transition: color var(--ca-fast);
+      white-space: nowrap;
+    }
+    .link {
+      border: 1px solid transparent;
+      color: var(--ca-text);
+      transition: background-color var(--ca-fast), border-color var(--ca-fast);
+    }
+    .catalog-link {
+      background: var(--ca-panel);
+      border-color: var(--ca-line-strong);
     }
     .link:hover,
     .link.is-active {
-      color: var(--ca-text);
+      background: var(--ca-raised);
+      border-color: var(--ca-signal);
     }
-    @media (max-width: 480px) {
-      .hide-sm { display: none; }
+    .brand:focus-visible,
+    .nav-action:focus-visible {
+      outline: 2px solid var(--ca-signal);
+      outline-offset: 3px;
+    }
+    .nav-action.ca-btn--primary,
+    .nav-action.ca-btn--primary:hover {
+      box-shadow: none;
+    }
+    @media (max-width: 760px) {
+      .bar { flex-wrap: wrap; gap: var(--ca-space-3); }
+      .links { width: 100%; flex-wrap: wrap; }
+      .nav-action { flex: 1; padding-inline: var(--ca-space-2); }
+      .catalog-link { flex-basis: 100%; }
     }
   `
 })

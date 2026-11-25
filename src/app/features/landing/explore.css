@@ -40,12 +40,21 @@ h1 {
   font-size: var(--ca-text-lg);
 }
 
+.intro .learning-format {
+  font-size: var(--ca-text-md);
+  line-height: 1.65;
+}
+
+.intro h1 {
+  text-wrap: balance;
+}
+
 /* ---------- Tarjetas ---------- */
 .grid {
   display: grid;
   /* Hasta 3 columnas; baja a 2 o 1 según el ancho (mínimo ~300px por tarjeta) */
   --gap: var(--ca-space-4);
-  grid-template-columns: repeat(auto-fill, minmax(max(300px, (100% - 2 * var(--gap)) / 3), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(300px, (100% - 2 * var(--gap)) / 3)), 1fr));
   gap: var(--gap);
   margin: 0;
   padding: 0;
