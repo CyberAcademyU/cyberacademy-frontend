@@ -10,6 +10,7 @@
   isolation: isolate;
   display: grid;
   grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(0, 1fr);
   min-height: calc(100dvh - 2 * clamp(10px, 2.5vw, 40px));
   padding: clamp(var(--ca-space-4), 4vw, var(--ca-space-8));
   overflow: hidden;
@@ -106,6 +107,10 @@ h1 {
   line-height: 0.98;
   letter-spacing: -0.045em;
   animation: copy-in 0.9s var(--ca-ease-out) 0.2s both;
+}
+
+@media (max-width: 360px) {
+  h1 { font-size: 2.1rem; }
 }
 
 .copy p {
